@@ -1,0 +1,320 @@
+README file for the programs in cdiffracSim/
+
+Originally written Fri Feb 24 2006
+Steve Bickerton
+McMaster University
+
+Package contains programs:
+- addKBO
+- basis
+- detect
+- fresnelBox
+- komplete
+- makeKernel
+- offsetPattern
+
+Package contains Perl Scripts:
+- fresplot.pl
+- 3Dpattern.pl
+- test.pl
+
+Package contains files: 
+
+library files:	 detectlib.c detectlib.h statistics.c statistics.h
+program files:	 (above).c
+makefile:	 Makefile
+
+
+
+___  Basic Usage __________________________________________________
+
+
+---------------------------   File formats  -----------------------
+
+- paramFile format  -------
+
+(NOTE: this is not a fresnelBox_paramfile 
+
+- 7 entries on one line (lines starting with # are ignored)
+Format: %d %d %le %le %s %d %le
+Meaning: cycles NperCycle corrThresh chiThresh fresDir Noffset dv
+
+eg.
+2 50 5 2 fresnelFiles 10 1
+
+cycles      = number of times to repeat adding 'NperCycle' objects and
+	      trying to fine them.  This was done so that a statistically 
+	      large number of objects could be used to test recovery
+	      without adding them all at once and risking crowding
+NperCycle   = the number of objects to add in each cycle
+corrThresh  = Threshhold in cross-correlation series in standard deviation 
+	      units to identify a candidate detection. 
+	      (eg. 5 ... only 5 sigma events are flagged)
+chiThresh   = Threshhold in chi-squared in standard deviation units to 
+	      reject a candidate detection.
+	      (eg. 2 ... only events with chi-squared _less_than_ 2 sigma
+	       above the mean will be kept... X^2 should be low for a good fit)
+fresDir     = directory containing the diffraction shadow patterns.  The
+	      files must be created using 'fresnelBox'
+Noffset     = The number of offsets from the line of sight to test.  The 
+	      extent of the shadow is considered to be where it's intensity
+	      varies by less than 1% of the star brightness.  This distance
+	      is divided by Noffset and evenly spaced offsets are cross-
+	      correlated in the detection process in addition to the 
+	      line-of-sight path.
+dv	    = a random velocity error.  Depricated.  Previously used to
+	      introduce a +/- dv in the object velocity to account for
+	      objects following none circular orbits.  (Velocites at a
+	      given elongation and distance assume a circular orbit).  As 
+	      the earths velocity dominates to give retrograde motion, the
+	      error introduced is negligible and this functionality was
+	      disabled (though not removed).
+
+
+- fresnelBox_paramFile --------
+
+(NOTE: this is not the format for a 'paramfile' ... see abover)
+
+- 11 entries on one line (lines starting with # are ignored)
+Format: %le %le %d %le %le %le %d %le %le %le %d
+Meaning: lambLo lambHi Nlambda   
+	 maxX00 x00Step  RStarProj 
+	 Nptsrc  AU  offset  aspectRatio order
+
+eg.
+4.0e-7   5.5e-7   20   20000.0   50.0   100.0   100   100.0   0.0   1.0   5
+
+lambLo		  = lowest wavelength in bandpass
+lambHi		  = highest wavelength in bandpass
+Nlambda		  = number of wavelengths in use to simulate bandpass
+maxX00		  = the maximum distance to calculate the lightcurve
+		    from the centre of the shadow pattern
+x00Step		  = the distance between points in the lightcurve
+RStarProj	  = the projected radius of the background star
+		    ___at the distance specified by AU___
+Nptsrc		  = the number of pointsources to use to simulate a star
+		    of size RStarProj
+AU		  = The heliocentric distance to the occulter in AU
+offset		  = The offset from the line-of-sight for the event
+aspedtRatio	  = the aspectratio of the occulting object along the 
+		    trajectory-axis.   So .. 2 means the object is twice
+		    as long along the line of motion, while 0.5 means that
+		    it's length along its path is half of that in the 
+		    perpendicular direction.  Trajectories at other angles
+		    have not yet been implemented.
+order		  = the order of the approximation.  The elliptical occulter
+		    is simulated by assembling several rectangles (it's
+		    easier to calculate diffraction patterns for rectangles).
+		    1 = a rectangle whose vertices just touch the ellipse
+		    2 =	1 plus 4 smaller rectangles which fill in the gaps
+		    3 = 2 plus 9 still smaller rectangles ...
+		    4 = ... you get the picture
+		    5 = a good choice ... higher order won't do any better
+
+
+
+- timeseries file format ------
+	     
+time0 intensity0
+time1 intensity1
+...
+timeN intensityN
+-------------------  END of File Formats  -------------------------
+
+
+
+------------------    Programs   ----------------------------------
+
+- addKBO ------------------
+
+Description:  Used to add artificial events to a timeseries.  This program is 
+	      just a front-end for a function that is used in many of the 
+	      other programs.
+
+Usage: addKBO elong fresnelfile timeseries N offset center[1|0] random[1|0]
+
+elong	      = solar elongation
+fresnelfile   = diffraction pattern file to use for adding object
+	        The file must be one made using fresnelBox
+timeseries    = The timeseries file.  It must have the format for a timeseries.
+N	      = The number of events to add
+offset	      = offset from line of sight to use
+center	      = boolean - add the event in the centre of the timeseries
+random	      = boolean - when integrating the pattern to obtain the same
+	                  sampling rate as the timeseries,  start 
+			  integration of the pattern at a randomly chosen
+			  point in the interval 'dt' (time between samples).
+			  This means that each added event will be slightly
+			  different to simulate the randomness of the timing
+			  of the camera shutter opening and closing.
+
+
+- basis -------------------
+
+Description:  Used to add artificial events to a timeseries and then use
+	      a different type of event pattern (size, distance) to find 
+	      the event added.  By testing multiple combinations, an
+	      adequate set of diffraction patterns can be chosen to 
+	      ensure that objects of a given size or distance are not
+	      missed.  Naturally, not _all_ sizes and distances can be
+	      tested in a detection run, and the idea is than many are
+	      sufficiently similar that a pattern for one will successfully
+	      detect a pattern for another.  This program helps choose which 
+	      patterns to use.
+
+Usage: basis elongation paramFile timeseries offset
+
+elongation    = solar elongation
+paramFile     = name of file containing necessary parameters to run.  It
+	        must have the format defined for paramFile.
+timeseries    = file containing the timeseries. (see file format)
+offset	      = An additional offset to be tested (in metres).  If this 
+	        number is zero, Noffset from the paramFile will be used.
+
+   
+
+- detect ---------------------
+
+Description: This is the basic program to search through a timeseries and 
+	     look for candidate occultation events using the cross-
+	     correlation of a pattern file with the timeseries and looking
+	     for peaks in the cross-correlation.
+
+Usage: detect elongation paramFile timeseries
+
+elongation    = solar elongation
+paramFile     = name of file containing necessary parameters to run.  It
+	        must have the format defined for paramFile.
+timeseries    = file containing the timeseries. (see file format)
+
+
+
+- fresnelBox -------------------
+
+Description: The program generates ideal diffraction shadows for a KBO 
+	     occultation with specified parameters.
+
+Usage: fresnelBox aa fresnelBox_paramFile
+
+aa	               = semimajor axis of the KBO
+fresnelBox_paramFile   = parameter file for the fresnelBox program (see above)
+
+
+
+- komplete ---------------------
+
+Description: The program is very similar to detect, but in addition to 
+	     cross-correlating each candidate event, it will add several 
+	     artificial versions of the event and compare then check
+	     it's detections to see if it successfully found the ones
+	     that it added.
+
+
+Usage: komplete elongation paramFile timeseries
+
+elongation    = solar elongation
+paramFile     = name of file containing necessary parameters to run.  It
+	        must have the format defined for paramFile.
+timeseries    = file containing the timeseries. (see file format)
+
+
+
+- makeKernel -------------------
+
+Description: This is a front-end program for the detectlib.c function
+	     makeKernel().  It's used to take an ideal diffraction 
+	     pattern, and sample it (integrate it in lengths 'dt') to 
+	     simulate it's appearance in a series of exposures of duration
+	     'dt'.
+
+Usage: ./makeKernel fresfile elong dt offset random[0|1] centering[0|1]
+
+fresfile      = the file containing the diffraction shadow created with	
+		'fresnelBox'
+elong	      = the solar elongation of the target star.
+dt	      = the sampling time
+offset	      = offset from the line-of-sight
+random	      = boolean - when integrating the pattern to obtain the same
+	                  sampling rate as the timeseries,  start 
+			  integration of the pattern at a randomly chosen
+			  point in the interval 'dt' (time between samples).
+			  This means that each added event will be slightly
+			  different to simulate the randomness of the timing
+			  of the camera shutter opening and closing.
+center	      = boolean - have the time 0.000 seconds centered.  Otherwise,
+			  the earliest point will be time 0.000 seconds.
+
+
+
+- offsetPattern ----------------
+
+Description: Given a pattern file for a diffraction shadow, make one or more
+	     offsets from the line-of-sight.
+
+Usage: ./offsetPattern fresfile maxOffset nOffset
+
+fresfile      = the file containing the diffraction shadow created with
+	        'fresnelBox'
+maxOffset     = the maximum offset in metres.
+nOffset	      = the number of offsets to use.  They will be evenly spaced 
+	        between zero and maxOffset.
+
+
+
+- basis ------------------------
+
+Description: This program is used to determine the best set of fresnel
+	     Pattern files to use for detection.  All files in the
+	     fresDir directory specified in the paramFile will be
+	     loaded and added to the timeseries.  Each pattern will be
+	     added and detection will be run using each pattern
+	     aswell.  In this way, it is possible to see how well a
+	     ... say 300m KBO at 40AU can be detected with the wrong
+	     pattern ... like say a 400m KBO at 55AU.  By looking thru
+	     the files basis produces, a good choice of pattern files
+	     can be selected ... enough to cover the space, without
+	     bloating the program.
+	     
+Usage: ./basis elongation paramFile timeseries offset
+
+elongation     = solar elongation of the target star
+paramFile      = name of file containing necessary parameters to run.  It
+		 must have the format defined for paramFile.
+timeseries     = file containing the timeseries. (see file format)
+offset	       = offset from line of sight (only one will be used)
+	         - if negative, Noffset from paramFile will be used 
+		 and will automatically choose the max offset to be
+		 where the signal drops below a threshhold
+		 
+	 
+
+___  Building ___
+
+To Build for normal use:
+make
+
+To build with basic debugging statements:
+make DEBUG=1
+
+To build forcing a program to recompile (eg detect.c) with basic debugging:
+make -W detect.c detect DEBUG=1
+
+To build with makeKernel() and addKBO() debugging statements:
+make MK_DEBUG=1 AKBO_DEBUG=1
+
+To build with temporary debug printfs (DB):
+make DB=1
+
+To build with extra precision in small signals
+make PREC=1
+
+To force a rebuild with different preprocessor directives, require a silent
+'touch' of detectlib.h (it's required for all compile steps).
+
+make -Wdetectlib.h PREC=1
+
+
+--- Environment Variables ----
+
+MIN_SIGNAL   - overrides #define'd OFFSET_MIN_I_VALUE and KERNEL_LO_I_CUT
+
