@@ -96,11 +96,11 @@ int main(int argc, char *argv[])
   ///////////////////////////////////////////////////////////////////
   
   DPRINTF ("main(): opening output files.\n");
-  sprintf(hitsfile, "%s.Bhits", tsfile);
+  snprintf(hitsfile, MAX_FILENAME, "%s.Bhits", tsfile);
   fp_hits = openfile(hitsfile, "w");
   printHitHeader(fp_hits);
   
-  sprintf(statsfile, "%s.Bstats", tsfile);
+  snprintf(statsfile, MAX_FILENAME, "%s.Bstats", tsfile);
   fp_stats = openfile(statsfile, "w");
   printBStatsHeader(fp_stats);
   

@@ -22,15 +22,15 @@ void usage(char execName[]) {
 
 void ddump(char param[], int value) { 
   char format[MAX_LINE_LENGTH];
-  sprintf (format, "%%-%ds %%d\n", MAX_PARAM);
+  snprintf (format, MAX_LINE_LENGTH,"%%-%ds %%d\n", MAX_PARAM);
   printf (format, param, value);}
 void fdump(char param[], FLOAT value) { 
   char format[MAX_LINE_LENGTH];
-  sprintf (format, "%%-%ds %%.4f\n", MAX_PARAM);
+  snprintf (format, MAX_LINE_LENGTH,"%%-%ds %%.4f\n", MAX_PARAM);
   printf (format, param, value);}
 void sdump(char param[], char value[]) { 
   char format[MAX_LINE_LENGTH];
-  sprintf (format, "%%-%ds %%s\n", MAX_PARAM);
+  snprintf (format, MAX_LINE_LENGTH,"%%-%ds %%s\n", MAX_PARAM);
   printf (format, param, value);}
 
 int main(int argc, char *argv[])

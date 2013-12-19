@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
   int i,j;
   FILE *fp;
 
-  sprintf (paramfile, "%s/%s", getenv("HOME"), ".fresnelparams");
+  snprintf (paramfile, MAX_FILENAME, "%s/%s", getenv("HOME"), ".fresnelparams");
 
   // read in command line arguments
   thisfile  =  argv[0];
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
   } else {
     aa = atof(argv[1]);
     if ( argc >= 3 )
-      sprintf(paramfile, "%s", argv[2]);
+      snprintf(paramfile, MAX_FILENAME, "%s", argv[2]);
     if ( argc == 4 )
       dump = atoi(argv[3]);
   }
@@ -573,11 +573,11 @@ int main(int argc, char *argv[])
    * 
    * ******************************************************************* */
   
-  char outfile[16];
+  char outfile[MAX_FILENAME];
 
   int aaint = (int) aa;
   int AUint = (int) AU;
-  sprintf (outfile, "fres-%05d_%05d", aaint, AUint);
+  snprintf (outfile, MAX_FILENAME, "fres-%05d_%05d", aaint, AUint);
   if ( (fp = fopen(outfile, "w")) < 0 ) {
     perror ("opening output file");
     exit (EXIT_FAILURE);
@@ -611,7 +611,7 @@ int main(int argc, char *argv[])
   if ( dump ) {
     
     // stars
-    sprintf (outfile, "fres-%05d_%05d.stars", aaint, AUint);
+      snprintf (outfile, MAX_FILENAME, "fres-%05d_%05d.stars", aaint, AUint);
     if ( (fp = fopen(outfile, "w")) < 0 ) {
       perror ("opening star-dump output file");
       exit (EXIT_FAILURE);
@@ -627,7 +627,7 @@ int main(int argc, char *argv[])
     
 
     // boxes
-    sprintf (outfile, "fres-%05d_%05d.boxes", aaint, AUint);
+    snprintf (outfile, MAX_FILENAME, "fres-%05d_%05d.boxes", aaint, AUint);
     if ( (fp = fopen(outfile, "w")) < 0 ) {
       perror ("opening box-dump output file");
       exit (EXIT_FAILURE);

@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
   } else {
     elong = RAD * atof(argv[1]);
     incl  = RAD * atof(argv[2]);
-    sprintf (pars->fresDir, "%s", argv[3]);
+    snprintf (pars->fresDir, MAX_FILENAME, "%s", argv[3]);
     tsfile = argv[4];
   }
   pars->NperCycle = 1;
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 
   // open the output file and print a header
   DPRINTF("main(): output to file\n");
-  sprintf (outfile, "%s.hide", tsfile);
+  snprintf (outfile, MAX_FILENAME, "%s.hide", tsfile);
   fp = openfile (outfile, "w");
 
   for (file_i=0; file_i<Nfresfiles; file_i++) {

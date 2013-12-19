@@ -106,12 +106,12 @@ int main(int argc, char *argv[])
 
   DPRINTF ("main(): opening output files.\n");
   FILE *fp_hits; //, *fp_test;
-  sprintf(hitsfile, "%s.hits", tsfile);
+  snprintf(hitsfile, MAX_FILENAME, "%s.hits", tsfile);
   fp_hits = openfile(hitsfile, "w");
   printHitHeader(fp_hits);
 
   FILE *fp_len; //, *fp_test;
-  sprintf (lengthfile, "%s.len", tsfile);
+  snprintf (lengthfile, MAX_FILENAME, "%s.len", tsfile);
   fp_len = openfile(lengthfile, "w");
   printLenHeader(fp_len);
 
@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
   /* ---  write a log file  ---- */
   FILE *fp_log; //, *fp_test;
   char logfile[MAX_FILENAME];
-  sprintf (logfile, "%s.log", tsfile);
+  snprintf (logfile, MAX_FILENAME, "%s.log", tsfile);
   fp_log = openfile(logfile, "w");
   fprintf(fp_log, "# tsfile  N   Length(s)   Hits   RMS  Kurtosis\n");
   fprintf(fp_log, "%s   %d  %8.1f   %d   %.4f  %.4f\n", 

@@ -119,11 +119,11 @@ int main(int argc, char *argv[])
   ///////////////////////////////////////////////////////////////////
 
   DPRINTF ("main(): opening output files.\n");
-  sprintf(hitsfile, "%s.hits", tsfile);
+  snprintf(hitsfile, MAX_FILENAME, "%s.hits", tsfile);
   fp_hits = openfile(hitsfile, "w");
   printHitHeader(fp_hits);
 
-  sprintf(statsfile, "%s.stats", tsfile);
+  snprintf(statsfile, MAX_FILENAME,"%s.stats", tsfile);
   fp_stats = openfile(statsfile, "w");
   printStatsHeader(fp_stats);
 

@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
   int i,j;
   FILE *fp;
 
-  sprintf (paramfile, "%s/%s", getenv("HOME"), ".fresnelparams");
+  snprintf (paramfile, MAX_FILENAME, "%s/%s", getenv("HOME"), ".fresnelparams");
 
   // read in command line arguments
   thisfile  =  argv[0];
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     aa = atof(argv[1]);
     T = atof(argv[2]);
     if ( argc >= 4 )
-      sprintf(paramfile, "%s", argv[3]);
+      snprintf(paramfile, MAX_FILENAME, "%s", argv[3]);
     if ( argc == 5 )
       dump = atoi(argv[4]);
   }
@@ -163,10 +163,10 @@ int main(int argc, char *argv[])
       //    ya, .. this works nicely.
       ord = 1;
       for (ordtmp=1; ordtmp<=order; ordtmp++) {
-	ord = ordtmp;
-	mod = (int) ( pow2order / pow(2,ord) );
-	if ( (Nsegment % mod ) == 0)
-	  break;
+    ord = ordtmp;
+    mod = (int) ( pow2order / pow(2,ord) );
+    if ( (Nsegment % mod ) == 0)
+      break;
       }
 
       // put the upper-right and lower-left coords in the structure
@@ -217,15 +217,15 @@ int main(int argc, char *argv[])
     for (j=0; j<nbox; j++) {
       
       if (coords[j].order >= currentOrder )
-	continue;
+    continue;
 
       xComp = coords[j].xur;
       yComp = coords[j].yur;
       
       if ( xComp < xAct  && xComp > coords[i].xll )
-	coords[i].xll = xComp;
+    coords[i].xll = xComp;
       if ( yComp < yAct  && yComp > coords[i].yll )
-	coords[i].yll = yComp;
+    coords[i].yll = yComp;
       
     }
 
@@ -317,10 +317,10 @@ int main(int argc, char *argv[])
   for (xPt=-Rx; xPt<=Ro; xPt+=boxWidth) {
     for (yPt=-Rx; yPt<=Ro; yPt+=boxWidth) {
       if ( (xPt*xPt + yPt*yPt) <= Ro*Ro ) {
-	sources[nStars].xPt = xPt;
-	sources[nStars].yPt = yPt;
-	nStars++;
-	//printf ("xPt: %f   yPt: %f\n",xPt,yPt);
+    sources[nStars].xPt = xPt;
+    sources[nStars].yPt = yPt;
+    nStars++;
+    //printf ("xPt: %f   yPt: %f\n",xPt,yPt);
       }
     }
   }
@@ -458,8 +458,13 @@ int main(int argc, char *argv[])
   int nMaxX00 = maxX00 / x00Step + 2;
   int m,q;
   FLOAT Ur[nMaxX00], Ui[nMaxX00], Ihole[nMaxX00], Idisk[nMaxX00];
+  FLOAT sum_real[nMaxX00], sum_imag[nMaxX00];
   FLOAT I0;
 
+  for (int i=0; i<nMaxX00; i++) {
+      Ihole[i] = Idisk[i] = sum_real[i] = sum_imag[i] = 0.0;
+  }
+  
   int boxCount;
   int lambCount = 0;
   for (i=0; i<nLambda; i++) {
@@ -482,7 +487,7 @@ int main(int argc, char *argv[])
     for (m=0; m<nbox; m++) {
       
       xCen = cens[m].x;       yCen = cens[m].y; 
-      dx   = cens[m].dx; 	dy   = cens[m].dy;
+      dx   = cens[m].dx; dy   = cens[m].dy;
       y0 = y00 + yStar - yCen;
       
       
@@ -504,65 +509,62 @@ int main(int argc, char *argv[])
       
       
       /*  massive debugging
-	  printf ("x: %.3f  y: %.3f  dx: %.3f  dy: %.3f  y0: %.3f  yStar: %.3f\n", xCen, yCen, dx, dy, y0, yStar);
-	  printf ("\tz:  %.3e  AU:  %.3e   eta0: %.3e  xi0: %.3e\n", z, AU, eta0, xi0);
-	  printf ("\tk:  %.3e  lamb:  %.3e  TWOPI: %.5e\n", k, lamb, TWOPI);
-	  printf ("\tC2: %.3e  C1:  %.3e   S2: %.3e  S1:  %.3e\n", C[eta2], C[eta1], S[eta2], S[eta1]);
-	  printf ("\teta1: %g  eta2: %g  ceta: %g  seta: %g\n", eta1f, eta2f, Ceta, Seta);	    
+      printf ("x: %.3f  y: %.3f  dx: %.3f  dy: %.3f  y0: %.3f  yStar: %.3f\n", xCen, yCen, dx, dy, y0, yStar);
+      printf ("\tz:  %.3e  AU:  %.3e   eta0: %.3e  xi0: %.3e\n", z, AU, eta0, xi0);
+      printf ("\tk:  %.3e  lamb:  %.3e  TWOPI: %.5e\n", k, lamb, TWOPI);
+      printf ("\tC2: %.3e  C1:  %.3e   S2: %.3e  S1:  %.3e\n", C[eta2], C[eta1], S[eta2], S[eta1]);
+      printf ("\teta1: %g  eta2: %g  ceta: %g  seta: %g\n", eta1f, eta2f, Ceta, Seta);	    
       */
       
       for (q=0; q<nMaxX00; q++) {
-	
-	//DB(1.0);
-	x00 = q*x00Step;
-	
-	if ( boxCount == 0) {
-	  Ur[q] = 0.0;
-	  Ui[q] = 0.0;
-	}
-	
-	x0 = x00 + xStar - xCen;
-	
-	xi1f = -xi0 * (dx + x0) * 1000;
-	xi2f =  xi0 * (dx - x0) * 1000;
-	xi1sign = (xi1f > 0) ? (1.0) : (-1.0);
-	xi2sign = (xi2f > 0) ? (1.0) : (-1.0);
-	xi1 = (int) fabs(xi1f);
-	xi2 = (int) fabs(xi2f);
-	
-	// need to make sure we won't get a seg fault for large xiN
-	xi1 = (xi1<MAX_FRES_INT) ? (xi1) : (MAX_FRES_INT);
-	xi2 = (xi2<MAX_FRES_INT) ? (xi2) : (MAX_FRES_INT);
-	Cxi = xi2sign*C[xi2] - xi1sign*C[xi1];
-	Sxi = xi2sign*S[xi2] - xi1sign*S[xi1];
-	
-	// if these appear to be switched, have a look for a factor
-	//  of -i in the constant coefficient ... you'll see it
-	Ur[q] +=   A * (Cxi*Seta + Sxi*Ceta);
-	Ui[q] +=   A * (Sxi*Seta - Cxi*Ceta);
-	
-	/*  Debugging
-	    if ( x00 > 660 && x00 < 710) {
-	    printf ("\t xi1: %g  xi2: %g  cxi: %g  sxi: %g\n", xi1f, xi2f, Cxi, Sxi);
-	    }
-	*/
-	
-	//DB(2.0);
+          
+          //DB(1.0);
+          x00 = q*x00Step;
+
+          if ( boxCount == 0) {
+              Ur[q] = 0.0;
+              Ui[q] = 0.0;
+          }
+          
+          x0 = x00 + xStar - xCen;
+          
+          xi1f = -xi0 * (dx + x0) * 1000;
+          xi2f =  xi0 * (dx - x0) * 1000;
+          xi1sign = (xi1f > 0) ? (1.0) : (-1.0);
+          xi2sign = (xi2f > 0) ? (1.0) : (-1.0);
+          xi1 = (int) fabs(xi1f);
+          xi2 = (int) fabs(xi2f);
+          
+          // need to make sure we won't get a seg fault for large xiN
+          xi1 = (xi1<MAX_FRES_INT) ? (xi1) : (MAX_FRES_INT);
+          xi2 = (xi2<MAX_FRES_INT) ? (xi2) : (MAX_FRES_INT);
+          Cxi = xi2sign*C[xi2] - xi1sign*C[xi1];
+          Sxi = xi2sign*S[xi2] - xi1sign*S[xi1];
+          
+          // if these appear to be switched, have a look for a factor
+          //  of -i in the constant coefficient ... you'll see it
+          Ur[q] +=   A * (Cxi*Seta + Sxi*Ceta);
+          Ui[q] +=   A * (Sxi*Seta - Cxi*Ceta);
+          
+          /*  Debugging
+              if ( x00 > 660 && x00 < 710) {
+              printf ("\t xi1: %g  xi2: %g  cxi: %g  sxi: %g\n", xi1f, xi2f, Cxi, Sxi);
+              }
+          */
+          
+          //DB(2.0);
       }
       boxCount++;
     }
-    
+
     for (q=0; q<nMaxX00; q++) {
-      
-      if (! Ihole[q] )
-	Ihole[q] = 0;
-      if (! Idisk[q] )
-	Idisk[q] = 0;
-      
-      I0 = ( Ur[q]*Ur[q] + Ui[q]*Ui[q] );
-      Ihole[q] += lambdas[i].w * I0;
-      Idisk[q] += lambdas[i].w * ( 1.0 - 2.0*Ur[q] + I0 ); 
-      
+
+        I0 = ( Ur[q]*Ur[q] + Ui[q]*Ui[q] );
+        Ihole[q] += lambdas[i].w * I0;
+        Idisk[q] += lambdas[i].w * ( 1.0 - 2.0*Ur[q] + I0 );
+        sum_real[q] += lambdas[i].w*Ur[q];
+        sum_imag[q] += lambdas[i].w*Ui[q];
+        
     }    
     lambCount++;
   }
@@ -573,9 +575,12 @@ int main(int argc, char *argv[])
 
   /* smooth over the stellar disk */
   FLOAT IholeSum[nMaxX00], IdiskSum[nMaxX00];
+  FLOAT realSum[nMaxX00], imagSum[nMaxX00];
   for (i=0;i<nMaxX00;i++) {
     IholeSum[i]=0.0;
     IdiskSum[i]=0.0;
+    realSum[i] = 0.0;
+    imagSum[i] = 0.0;
   }
   maxX00 -= RStarProj;
   nMaxX00 =  maxX00 / x00Step + 1;
@@ -595,8 +600,10 @@ int main(int argc, char *argv[])
       FLOAT frac = (dist - i_dist*x00Step)/x00Step;
       IholeSum[i] += Ihole[i_dist] + frac*(Ihole[i_dist] - Ihole[i_dist+1]);
       IdiskSum[i] += Idisk[i_dist] + frac*(Idisk[i_dist] - Idisk[i_dist+1]);
-	
 
+      realSum[i] += sum_real[i_dist] + frac*(sum_real[i_dist] - sum_real[i_dist + 1]);
+      imagSum[i] += sum_imag[i_dist] + frac*(sum_imag[i_dist] - sum_imag[i_dist + 1]);
+      
     }
     
 
@@ -609,11 +616,11 @@ int main(int argc, char *argv[])
    * 
    * ******************************************************************* */
   
-  char outfile[16];
+  char outfile[MAX_FILENAME];
 
   int aaint = (int) aa;
   int AUint = (int) AU;
-  sprintf (outfile, "fres-%05d_%05d", aaint, AUint);
+  snprintf (outfile, MAX_FILENAME, "fres-%05d_%05d", aaint, AUint);
   if ( (fp = fopen(outfile, "w")) < 0 ) {
     perror ("opening output file");
     exit (EXIT_FAILURE);
@@ -635,7 +642,11 @@ int main(int argc, char *argv[])
 
   for (q=0; q<nMaxX00; q++) {
     x00 = x00Step*q;
-    fprintf(fp,"%.0f %.8f %.8f\n",x00,IholeSum[q]/Ncompon,IdiskSum[q]/Ncompon);
+    fprintf(fp,"%.0f %.8f %.8f  %.8f\n",
+            x00,
+            IholeSum[q]/Ncompon, IdiskSum[q]/Ncompon,
+            atan2(imagSum[q]/Ncompon, 1.0 - realSum[q]/Ncompon)
+        );
   }
 
   if ( fclose(fp) < 0 ) {
@@ -648,7 +659,7 @@ int main(int argc, char *argv[])
   if ( dump ) {
     
     // stars
-    sprintf (outfile, "fres-%05d_%05d.stars", aaint, AUint);
+    snprintf (outfile, MAX_FILENAME, "fres-%05d_%05d.stars", aaint, AUint);
     if ( (fp = fopen(outfile, "w")) < 0 ) {
       perror ("opening star-dump output file");
       exit (EXIT_FAILURE);
@@ -664,7 +675,7 @@ int main(int argc, char *argv[])
     
 
     // boxes
-    sprintf (outfile, "fres-%05d_%05d.boxes", aaint, AUint);
+    snprintf (outfile, MAX_FILENAME, "fres-%05d_%05d.boxes", aaint, AUint);
     if ( (fp = fopen(outfile, "w")) < 0 ) {
       perror ("opening box-dump output file");
       exit (EXIT_FAILURE);

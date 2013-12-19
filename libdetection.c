@@ -392,7 +392,7 @@ int getFresnelFileList (char *filelist[], PARAMLIST *pars) {
     filelist[filecount] = det_malloc(MAX_FILENAME*sizeof(char));
     filelist[filecount] = strncpy(filelist[filecount], dp->d_name, 
 				  MAX_FILENAME);
-    sprintf (path, "%s/%s", pars->fresDir, dp->d_name);
+    snprintf (path, MAX_FILENAME,"%s/%s", pars->fresDir, dp->d_name);
     strcpy(filelist[filecount], path);
 
     filecount++;
@@ -540,7 +540,7 @@ void loadFresnelFile (SHADOW *pfresPatt, char *filename) {
   // if there are negatives, we have the full profile, not just half
   pfresPatt->fullprofile = (pfresPatt->xI[0].x < 0) ? 1 : 0;
 
-  sprintf (pfresPatt->filename, "%s", filename);
+  snprintf (pfresPatt->filename, MAX_FILENAME,"%s", filename);
   pfresPatt->is_all_zero = (offsetcount == j) ? 1 : 0;
   pfresPatt->maxOffset = (offsetcount == j) ? x/2 : maxOffset;
 
@@ -586,7 +586,7 @@ int loadFresnelFiles (SHADOW *pfresPatt[], PARAMLIST *pars) {
 	   (strlen(filename) != FRESFILE_LENGTH_TA) )  ) {
       continue;
     }
-    sprintf (path, "%s/%s", pars->fresDir, filename);
+    snprintf (path, MAX_FILENAME,"%s/%s", pars->fresDir, filename);
     loadFresnelFile(pfresPatt[fresfilecount], path);
     fresfilecount++;
     //free(filelist[i]);
@@ -1267,7 +1267,7 @@ void addKBO (int *addlist, TS *ptsa, SHADOW *pfresPatt, int n_events, int i_vel,
 #if defined(KERNEL_DUMP)
     FILE *fp;
     char kernelfile[8];
-    sprintf (kernelfile, "kern%02d", i);
+    snprintf (kernelfile, 8, "kern%02d", i);
     fp = openfile(kernelfile, "w");
     for (j=0; j<n; j++) {
       fprintf (fp, "%.6f %.6f\n", ptsa->tI[istart+j].t, kernel[j]);
@@ -1889,7 +1889,7 @@ int xchi (HIT *hits, TS *ptsa, SHADOW *pfresPatt, int i_vel, FLOAT chiThresh, in
     FILE *fp;
     char outfile[MAX_FILENAME];
 
-    sprintf (outfile,"%s.xchi",ptsa->tsfile);
+    snprintf (outfile, MAX_FILENAME, "%s.xchi",ptsa->tsfile);
     fp = openfile(outfile, "w");
     
     // print a header
@@ -2307,7 +2307,7 @@ void writeXcorrSeries(TS *ptsa, SHADOW *pfresPatt, FLOAT *corr, FLOAT *corrNorm,
     }
 
     char path[MAX_FILENAME];
-    sprintf(path, "%s.%s.fits", ptsa->tsfile, suffix);
+    snprintf(path, MAX_FILENAME, "%s.%s.fits", ptsa->tsfile, suffix);
     
     if (! fits_create_file(&fptr, path, &status) ) {
       
@@ -2347,11 +2347,11 @@ void writeXcorrSeries(TS *ptsa, SHADOW *pfresPatt, FLOAT *corr, FLOAT *corrNorm,
       char label[9];
       char value[21];
       for (i=0; i<n; i++) {
-	sprintf(label, "HIT%03d",i);
-	sprintf(value, "%7d  %4.1f %4.1f", 
-		hits[i].index, hits[i].cormag, hits[i].cormag0);
-	fits_write_key(fptr, TSTRING, label, value, "i cormag cormag0", 
-		       &status);
+          snprintf(label, 9, "HIT%03d",i);
+          snprintf(value, 21, "%7d  %4.1f %4.1f", 
+                   hits[i].index, hits[i].cormag, hits[i].cormag0);
+          fits_write_key(fptr, TSTRING, label, value, "i cormag cormag0", 
+                         &status);
       }
       
       /* write the data */
@@ -2366,7 +2366,7 @@ void writeXcorrSeries(TS *ptsa, SHADOW *pfresPatt, FLOAT *corr, FLOAT *corrNorm,
 
 
   } else {
-    sprintf (outfile, "%s.xcor",ptsa->tsfile);
+      snprintf (outfile, MAX_FILENAME, "%s.xcor",ptsa->tsfile);
     fp = openfile(outfile, "w");
     
     // print a header
@@ -2509,11 +2509,11 @@ void debugOutput (SHADOW *pfresPatt[], PARAMLIST *pars, TS *pts, TS *ptsa, int N
   int i,j;
   FILE *fp;
   //  char *prefix = "tmpfres-";
-  char filename[16];
+  char filename[MAX_FILENAME];
 
   for (i=0; i<Npfres; i++) {
 
-    sprintf (filename,"%s%05d","tmpfres-",i);
+      snprintf (filename, MAX_FILENAME, "%s%05d","tmpfres-",i);
     fp = openfile (filename, "w");
     for (j=0; j<(pfresPatt[i]->n); j++) {
       fprintf(fp, "%.4f %.4f %.4f\n", pfresPatt[i]->xI[j].x, 
@@ -2533,7 +2533,7 @@ void debugOutput (SHADOW *pfresPatt[], PARAMLIST *pars, TS *pts, TS *ptsa, int N
   for (i=0; i<Npfres; i++) {
 
     for (i_vel=0; i_vel<N_VELOCITIES; i_vel++) {
-      sprintf(filename, "%s%03d-%01d","kernel-",i,i_vel);
+        snprintf(filename, MAX_FILENAME, "%s%03d-%01d","kernel-",i,i_vel);
       
       fp = openfile (filename, "w");
       for (j=0; j<(pfresPatt[i]->nI[i_vel]); j++) {

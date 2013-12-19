@@ -20,12 +20,14 @@ HEADS = detection.h statistics.h fft-gsl.h fft-fftw.h
 #OBJS  = libdetection.o libstatistics.o libfft-gsl.o libfft-fftw.o
 OBJS  = libdetection.o libstatistics.o libfft-fftw.o
 
-CFLAGS   = -g -Wall -O3 -std=c99 $(CFLAGS_PREC)
-CPPFLAGS = -I$(HOME)/usr/include -I/opt/local/include
+CFLAGS   = -g -Wall -O0 -std=c99 $(CFLAGS_PREC)
+#CPPFLAGS = -I$(HOME)/usr/include -I/opt/local/include
+CPPFLAGS = -I/opt/local/include
 #LDFLAGS  = $(OBJS) -L$(HOME)/usr/lib -L/opt/local/lib \
 #	-lcfitsio -lfftw3 -lfftw3f -lm -lgsl -lgslcblas
 
-LDFLAGS  = $(OBJS) -L$(HOME)/usr/lib32 -L/opt/local/lib \
+#LDFLAGS  = $(OBJS) -L$(HOME)/usr/lib -L/opt/local/lib 
+LDFLAGS  = $(OBJS) -L/opt/local/lib \
 	-lcfitsio -lfftw3 -lm -lgsl -lgslcblas
 
 INSTALL = /usr/bin/install

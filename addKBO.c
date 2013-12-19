@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 
   } else {
     DPRINTF("main(): output to file\n");
-    sprintf (outfile, "%s.add", tsfile);
+    snprintf (outfile, MAX_FILENAME,"%s.add", tsfile);
     fp = openfile (outfile, "w");
     
     // a header
