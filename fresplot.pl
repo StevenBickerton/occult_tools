@@ -5,6 +5,7 @@
 use strict;
 use warnings;
 use Math::Trig;
+use File::Basename;
 
 my ($fresfile, @args) = @ARGV;
 ($fresfile and -s $fresfile) or die "usage: $0 fresfile [otherFresfiles] [elong] [outfile] [dump]\n";
@@ -17,6 +18,7 @@ my $outfile;
 my ($eps, $png) = (0,0);
 my @fresfile = ("$fresfile");
 my $dumpcode = 0;
+my $xrange = 0;
 foreach my $arg (@args) {
   if ($arg=~/^$number$/) {
     $elong   = $arg;
@@ -28,6 +30,8 @@ foreach my $arg (@args) {
     $outfile = $arg;
   } elsif ($arg=~/dump/) {
     $dumpcode = 1;
+  } elsif ($arg=~/x=${number}/) {
+      ($xrange) = $arg =~ /x=($number)/;
   } else {
     push @fresfile, $arg;
   }
@@ -42,29 +46,29 @@ my $k = 1;
 foreach my $fresfile2 (@fresfile) {
     open (DATA, "$fresfile2");
     while (<DATA>) {
-	
-	# load only the data for the 1st fresfile
-	if ($_ =~ /^\#/ && $k == 1) {
-	    my ($param, $definition, $value) = (split)[1,2,3];
-	    $value *= 1e9 if ($param =~ /^lamb/); # convert to nm
-	    $head{$param} = $value;
-	    #printf "$param $definition $value\n";
-	    next;
-	}
-	next if /^\#/;
+    
+    # load only the data for the 1st fresfile
+    if ($_ =~ /^\#/ && $k == 1) {
+        my ($param, $definition, $value) = (split)[1,2,3];
+        $value *= 1e9 if ($param =~ /^lamb/); # convert to nm
+        $head{$param} = $value;
+        #printf "$param $definition $value\n";
+        next;
+    }
+    next if /^\#/;
 
-	# get the max's and min's of _all_ fresfiles
-	my ($x, $Ihole, $Idisk) = split;
-	$has_negatives = 1 if $x < 0.0;
+    # get the max's and min's of _all_ fresfiles
+    my ($x, $Ihole, $Idisk) = split;
+    $has_negatives = 1 if $x < 0.0;
 
-	if ($Idisk<$Imin) {
-	    $Imin = $Idisk;
-	    $xmin = $x;
-	}
-	if ($Idisk>$Imax) {
-	    $Imax = $Idisk;
-	    $xmax = $x;
-	}
+    if ($Idisk<$Imin) {
+        $Imin = $Idisk;
+        $xmin = $x;
+    }
+    if ($Idisk>$Imax) {
+        $Imax = $Idisk;
+        $xmax = $x;
+    }
     }
     close (DATA);
     $k++;
@@ -109,12 +113,12 @@ my $angle = sprintf "%.0f", $head{angle} || 0.0;
 my $lambda = 1e-9*($head{lambHi} + $head{lambLo})/2.0 ;
 my $fresnelscale = sqrt($lambda*$AU*$AU_M/2.0);
 my $fsu = sprintf "%d", $fresnelscale;
-my $xrange = 8.3*$fresnelscale + 2.0*$head{aa} + 2.0*$head{RStar};
+$xrange = 8.3*$fresnelscale + 2.0*$head{aa} + 2.0*$head{RStar} unless $xrange > 0;
 my $trange = $xrange/$vRet;
 
 # set range 30% above/below the peaks and troughs
 my $IrangeMin = 1.0 - 1.8*(1.0 - $Imin);
-my $IrangeMax = 1.0 + 1.4*(1.0 - $Imin);
+my $IrangeMax = 1.0 + 1.5*(1.0 - $Imin);
 
 my $geoShadowMin = ($IrangeMin>0) ? $IrangeMin : 0;
 
@@ -156,7 +160,8 @@ my $infile_mtime = sprintf "$Y $month[$M] $mdy %02d:%02d:%02d", $hh,$mm,$ss;
 
 my $terminal = "x11 enhanced font \"Courier,14\"";
 my $setoutput = "\n";
-my $title = "file: $filename  ($infile_mtime)";
+my $basename = basename($filename);
+my $title = "file: $basename  ($infile_mtime)";
 my $labelSize = 14;
 if (defined($outfile) ) {
   if ($eps) {
@@ -174,8 +179,8 @@ my $labelSize2 = $labelSize + 4;
 my $titleSize = $labelSize + 4;
 
 
-my $x2label = "Time (sec) (Assumes ${elong}{/Symbol \260} Solar Elongation";
-$x2label = "Time (sec) (Assumes ${elong}d Solar Elongation" if $png;
+my $x2label = "Time (sec) (Assumes ${elong}{/Symbol \260} Solar Elongation)";
+$x2label = "Time (sec) (Assumes ${elong}d Solar Elongation)" if $png;
 my $lamblabel = "{/Symbol=${labelSize} l}";
 $lamblabel = "lambda" if $png;
 
@@ -189,8 +194,8 @@ my $gpt_string = "#!/usr/bin/env gnuplot\n".
 
     "set tmargin 6\n".
     "set bmargin 4\n".
-    "set rmargin 5\n".
-    "set lmargin 5\n".
+    "set rmargin 9\n".
+    "set lmargin 9\n".
     "set title \'$title\' font \"Courier,${titleSize}\"\n".
     "set xlabel \'Distance from Shadow Centre (m)\' font \"Courier,${labelSize2}\"\n".
     "set x2label \'$x2label\' font \"Courier,${labelSize2}\"\n".

@@ -20,3 +20,6 @@ xchi
 xcorrelate
 fres-*
 test/
+*.dSYM
+.gdb_history
+
