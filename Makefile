@@ -17,7 +17,7 @@ HEADS = detection.h statistics.h fft-gsl.h fft-fftw.h
 #OBJS  = libdetection.o libstatistics.o libfft-gsl.o libfft-fftw.o
 OBJS  = libdetection.o libstatistics.o libfft-fftw.o
 
-CFLAGS   = -g -Wall -O0 -std=c99 $(CFLAGS_PREC)
+CFLAGS   = -g -Wall -O2 -std=c99 $(CFLAGS_PREC)
 #CPPFLAGS = -I$(HOME)/usr/include -I/opt/local/include
 CPPFLAGS = -I/opt/local/include
 #LDFLAGS  = $(OBJS) -L$(HOME)/usr/lib -L/opt/local/lib \
