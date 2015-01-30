@@ -22,4 +22,4 @@ fres-*
 test/
 *.dSYM
 .gdb_history
-
+test_commands.log

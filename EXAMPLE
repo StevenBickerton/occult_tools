@@ -1,0 +1,100 @@
+
+Installing
+------------------------------------------------------
+
+(1) install dependencies
+
+gsl
+fftw3
+cfitsio
+
+(2) 'make'
+    - fiddle with Makefile so it finds dependencies
+    - CPPFLAGS (-I /path/to/include) and
+    - LDFLAGS (-L /path/to/objects)
+
+(3) 'make test'
+    - this just runs 'test.pl' which runs each command to verify
+      it works (works===runs ... works != test output)
+    - the commands are written 'test_commands.log'
+
+      
+Make an occultation pattern
+------------------------------------------------------
+
+======================
+(1) make a file with parameters for the occultation (see README for what the entries mean)
+
+(option A) the hard way, figure out the params yourself --
+
+$ cat fresT.params
+# lambLo lambHi Nlamb maxX00 x00step Rstarproj Nptsrc AU offs AR order
+4e-7 5e-7 10 15000 50 500 50 40 0 1 5
+
+(option B) easier, writeFresParams will figure out suitables values for a given star
+           ==> 4000-5000 ang band, mag_v=12, G2V star at 40 AU
+
+$ writeFresParams 4e-7 5e-7 12 G2V 40 > fresT.params
+$ cat fresT.params
+# lambLo lambHi Nlamb maxX00 x00step Rstarproj Nptsrc AU offs AR order
+4e-7 5e-7 10 11600 58 477 53 40 0 1 5
+
+=======================
+(2) construct the diffraction pattern for e.g. radius=600m KBO, Teff=5200K
+(the '1' dumps extra debug files)
+
+$ fresnelT 600 5200 fresT.params 1
+<writes a file called fres-00600_00040>
+
+==> if '1' was used, the boxes and stars are written, too.
+<files called fres-00600_00040.boxes, fres-00600_00040.stars>
+
+
+========================
+(3) have a look at what was made -  opens a gnuplot figure (add foo.png to write to file)
+
+# the diffraction pattern
+$ fresplot.pl fres-00600_00040
+
+# the shape of occulter made with component occulting boxes
+$ showBoxes.pl fres-00600_00040.boxes
+
+# the component point sources used to make the stellar disk
+$ showStars.pl fres-00600_00040.stars
+
+
+Add it to a time series
+------------------------------------------------------------
+
+- (e.g. file 'ts' with 2 columns ... time, intensity)
+
+<usage>
+$./addKBO
+#Usage: ./addKBO elong incl fresnelfile timeseries N offset center[1|0] random[1|0] [seed]
+
+# e.g. add 10 occultations, impact param of 500m off line-of-sight
+$ addKBO 180 0 fres-00600_00040 ts 10 500 0 1
+
+<write a file 'ts.add' which is 'ts' data with 10 occultations added>
+
+
+Detect the pattern in a time-series
+--------------------------------------------------------------
+
+ -(note the 'fresnelFiles' directory must be in the current directory')
+
+$ mkdir fresnelFiles
+$ cp fres-00600_00040 fresnelFiles/
+
+$ cat params.detect
+# cycles NperCycle  corrThresh  chiThresh  fresDir      Noffset  dv
+2        20         5.0         2.0        fresnelFiles 10       1
+
+$ detect 180 0 params.detect ts.add
+fresnelFiles/fres-00600_00040 1/1
+
+# writes these files
+ts.add.log  
+ts.add.len  
+ts.add.hits     # *** list of locations where something was found ***
+

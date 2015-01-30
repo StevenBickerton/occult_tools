@@ -14,9 +14,24 @@ foreach my $program2test (@ARGV) {   $program{$program2test} = 1;  }
 my $buildDir = `pwd`;
 chomp $buildDir;
 
+my $log = "$buildDir/test_commands.log";
+system ("rm -f $log") if ( -f $log);
+
+sub mysystem($;$) {
+    my ($cmd,$doLog) = @_;
+    if (defined $doLog) {
+        open (LOG, ">>$log");
+        #printf LOG "echo \"$cmd\"\n";
+        printf LOG "$cmd\n";
+        close(LOG);
+    }
+    return system("$cmd");
+}
+
 (-d "test") or mkdir("test");
-system("cp ts test/");
-system("cp ts.fits test/");
+mysystem("cp ts test/");
+mysystem("cp ts.fits test/");
+mysystem("cd test/");
 chdir ("test/");
 
 my $fresDir = "fresnelFiles";
@@ -44,6 +59,7 @@ my $corrThresh = 5;
 my $chiThresh = -2;
 
 
+
 ##################################################
 #  test fresnelBox
 #    make a pattern for: g' filter, 100m star, 40 AU
@@ -56,12 +72,13 @@ if ( $program{"$program"} or $all ) {
     printf STDERR "Testing $program ... ";
     
     
-    system ("rm -rf $fresDir") if ( -d $fresDir );
+    mysystem ("rm -rf $fresDir") if ( -d $fresDir );
     
-    mkdir ("$fresDir/");
-    chdir ("$fresDir/");
+    mysystem ("mkdir $fresDir");
+    mysystem ("cd $fresDir/");
+    chdir("$fresDir");
     
-    system ("cp $buildDir/$program ./");
+    mysystem ("cp $buildDir/$program ./");
     
     $paramfile = "params.$program";
     open (PARAMS, ">${paramfile}1");
@@ -82,11 +99,12 @@ if ( $program{"$program"} or $all ) {
     my $out2 = "fres-01000_00320";
     my $out3 = "${out1}.stars";
     my $out4 = "${out1}.boxes";
-    my $ran = (system($command)==0) ? 1:0;
+    my $ran = (mysystem($command, 1)==0) ? 1:0;
     my $wrote = (-s $out1 and -s $out2 and -s $out3 and -s $out4);
     printf "%s\n", ($ran and $wrote) ? "success" : "failed";
 
-    chdir ("../");
+    mysystem("cd ../");
+    chdir("../");
 }
 
 
@@ -104,12 +122,13 @@ if ( $program{"$program"} or $all ) {
     printf STDERR "Testing $program ... ";
     
     
-    system ("rm -rf $fresDirT") if ( -d $fresDirT );
+    mysystem ("rm -rf $fresDirT") if ( -d $fresDirT );
     
-    mkdir ("$fresDirT/");
-    chdir ("$fresDirT/");
+    mysystem ("mkdir $fresDirT/");
+    mysystem ("cd $fresDirT/");
+    chdir("$fresDirT");
     
-    system ("cp $buildDir/$program ./");
+    mysystem ("cp $buildDir/$program ./");
     
     $paramfile = "params.$program";
     open (PARAMS, ">$paramfile");
@@ -125,11 +144,12 @@ if ( $program{"$program"} or $all ) {
     my $out2 = "fres-00400_00040";
     my $out3 = "${out1}.stars";
     my $out4 = "${out1}.boxes";
-    my $ran = (system($command)==0) ? 1:0;
+    my $ran = (mysystem($command, 1)==0) ? 1:0;
     my $wrote = (-s $out1 and -s $out2 and -s $out3 and -s $out4);
     printf "%s\n", ($ran and $wrote) ? "success" : "failed";
 
-    chdir ("../");
+    mysystem("cd ../");
+    chdir("../");
 }
 
 
@@ -146,12 +166,13 @@ if ( $program{"$program"} or $all ) {
     printf STDERR "Testing $program ... ";
     
     
-    system ("rm -rf $fresDirTA") if ( -d $fresDirTA );
+    mysystem ("rm -rf $fresDirTA") if ( -d $fresDirTA );
     
-    mkdir ("$fresDirTA/");
-    chdir ("$fresDirTA/");
+    mysystem("mkdir $fresDirTA/");
+    mysystem("cd $fresDirTA/");
+    chdir("$fresDirTA");
     
-    system ("cp $buildDir/$program ./");
+    mysystem ("cp $buildDir/$program ./");
     
     $paramfile = "params.$program";
     open (PARAMS, ">$paramfile");
@@ -167,11 +188,12 @@ if ( $program{"$program"} or $all ) {
     my $out2 = "fresTA-00400_00040";
     my $out3 = "${out1}.stars";
     my $out4 = "${out1}.boxes";
-    my $ran = (system($command)==0) ? 1:0;
+    my $ran = (mysystem($command, 1)==0) ? 1:0;
     my $wrote = (-s $out1 and -s $out2 and -s $out3 and -s $out4);
     printf "%s\n", ($ran and $wrote) ? "success" : "failed";
     
-    chdir ("../");
+    mysystem("cd ../");
+    chdir("../");
 }
 
 
@@ -186,7 +208,7 @@ if ($program{"$program"} or $all ) {
     # Usage: ./addKBO elong incl fresnelfile timeseries N offset center[1|0] random[1|0]
     $command = "../$program $elong $incl ${fresDir}/$fresfile $tsfile 10 $offset 0 1 2> error.${program}";
     
-    my $ran = (system($command)==0) ? 1:0;
+    my $ran = (mysystem($command,1)==0) ? 1:0;
     my $wrote = (-s $ts_add_file);
     printf "%s\n", ($ran and $wrote) ? "success" : "failure";
     
@@ -212,7 +234,7 @@ if ($program{"$program"} or $all ) {
     # Usage: ./detect elongation paramFile timeseries
     $command = "../$program $elong $incl params.detect ts.add 2> error.$program";
     
-    my $ran = (system($command)==0) ? 1:0;
+    my $ran = (mysystem($command,1)==0) ? 1:0;
     my $wrote = (-s "${ts_add_file}.hits");
     printf "%s\n", ($ran and $wrote) ? "success" : "failed";
 
@@ -231,7 +253,7 @@ if ($program{"$program"} or $all ) {
     $command = "../$program $elong $incl ${fresDir}/$fresfile $tsfits 10 $offset 0 1 2> error.${program}";
     
     ( -s $ts_add_fits ) && unlink $ts_add_fits;
-    my $ran = (system($command)==0) ? 1:0;
+    my $ran = (mysystem($command,1)==0) ? 1:0;
     my $wrote = (-s $ts_add_fits);
     printf "%s\n", ($ran and $wrote) ? "success" : "failure";
     
@@ -257,7 +279,7 @@ if ($program{"$program"} or $all ) {
     # Usage: ./detect elongation paramFile timeseries
     $command = "../$program $elong $incl params.detect ts.fits.add.fits 2> error.$program";
     
-    my $ran = (system($command)==0) ? 1:0;
+    my $ran = (mysystem($command,1)==0) ? 1:0;
     my $wrote = (-s "${ts_add_fits}.hits");
     printf "%s\n", ($ran and $wrote) ? "success" : "failed";
 
@@ -281,7 +303,7 @@ if ($program{"$program"} or $all ) {
     my $out1 = "${ts_add_file}.hits";
     my $out2 = "${ts_add_file}.stats";
 
-    my $ran = (system($command)==0) ? 1:0;
+    my $ran = (mysystem($command,1)==0) ? 1:0;
     my $wrote = (-s $out1 and -s $out1);
     printf "%s\n", ($ran and $wrote) ? "success" : "failed";
 
@@ -307,7 +329,7 @@ if ($program{"$program"} or $all ) {
     my $out1 = "${ts_add_file}.Bhits";
     my $out2 = "${ts_add_file}.Bstats";
  
-    my $ran = (system($command)==0) ? 1:0;
+    my $ran = (mysystem($command,1)==0) ? 1:0;
     my $wrote = (-s $out1 and -s $out2);
     printf "%s\n", ($ran and $wrote) ? 	"success" : "failed";
 
@@ -330,9 +352,9 @@ if ($program{"$program"} or $all ) {
     $command1 = "../$program $fresDir/$fresfile $elong $incl $dt $offset $random $center > $out1 2> error.$program";
     $command2 = "../$program $fresDir/$fresfile $elong $incl $dt $offset $norandom $center > $out2 2>> error.$program";
     
-    my $ran1 = (system($command1)==0) ? 1:0;
+    my $ran1 = (mysystem($command1,1)==0) ? 1:0;
     my $wrote1 = (-s $out1);
-    my $ran2 = (system($command2)==0) ? 1:0;
+    my $ran2 = (mysystem($command2,1)==0) ? 1:0;
     my $wrote2 = (-s $out2);
 
     printf "%s\n", ($ran1 && $ran2 && $wrote1 && $wrote2) ? "success":"failed";
@@ -354,7 +376,7 @@ if ($program{"$program"} or $all ) {
     #Usage: ./offsetPattern fresfile maxOffset nOffset
     $command = "../$program $fresDir/$fresfile $maxOffset $Noffset > $out  2> error.${program}";
     
-    my $ran = (system($command) == 0) ? 1:0;
+    my $ran = (mysystem($command,1) == 0) ? 1:0;
     my $wrote = (-s $out);
     printf "%s\n", ($ran and $wrote) ? "success" : "failed";
 
@@ -376,7 +398,7 @@ if ($program{"$program"} or $all ) {
     $command = "../$program $elong $incl $fresDir/$fresfile $ts_add_file $offset $corrThresh 2> error.${program}";
 
     my $out = "${ts_add_file}.xcor";    
-    my $ran = (system($command) == 0) ? 1:0;
+    my $ran = (mysystem($command,1) == 0) ? 1:0;
     my $wrote = (-s $out);
     printf "%s\n", ($ran and $wrote) ? "success" : "failed";
 
@@ -399,7 +421,7 @@ if ($program{"$program"} or $all ) {
 
 
     my $out = "${ts_add_file}.xchi";    
-    my $ran = (system($command) == 0) ? 1:0;
+    my $ran = (mysystem($command,1) == 0) ? 1:0;
     my $wrote = (-s $out);
     printf "%s\n", ($ran and $wrote) ? "success" : "failed";
 
@@ -421,7 +443,7 @@ if ($program{"$program"} or $all ) {
 
 
     my $out = "${tsfile}.hide";    
-    my $ran = (system($command) == 0) ? 1:0;
+    my $ran = (mysystem($command,1) == 0) ? 1:0;
     my $wrote = (-s $out);
     printf "%s\n", ($ran and $wrote) ? "success" : "failed";
 
@@ -432,14 +454,14 @@ if ($program{"$program"} or $all ) {
     
     printf "Testing $program ... ";
     
-    system("cp $tsfile $tsfileTA");
+    mysystem("cp $tsfile $tsfileTA");
     
     #Usage: ../hideKBO_TA elongation paramFile timeseries
     $command = "../$program $elong $incl $fresDirTA $tsfileTA 2> error.${program}";
 
 
     my $out = "${tsfileTA}.hide";    
-    my $ran = (system($command) == 0) ? 1:0;
+    my $ran = (mysystem($command,1) == 0) ? 1:0;
     my $wrote = (-s $out);
     printf "%s\n", ($ran and $wrote) ? "success" : "failed";
 
