@@ -31,7 +31,6 @@ sub mysystem($;$) {
 (-d "test") or mkdir("test");
 mysystem("cp ts test/");
 mysystem("cp ts.fits test/");
-mysystem("cd test/");
 chdir ("test/");
 
 my $fresDir = "fresnelFiles";
