@@ -74,8 +74,7 @@ if ( $program{"$program"} or $all ) {
     
     mysystem ("rm -rf $fresDir") if ( -d $fresDir );
     
-    mysystem ("mkdir $fresDir");
-    mysystem ("cd $fresDir/");
+    mkdir("$fresDir");
     chdir("$fresDir");
     
     mysystem ("cp $buildDir/$program ./");
@@ -103,7 +102,6 @@ if ( $program{"$program"} or $all ) {
     my $wrote = (-s $out1 and -s $out2 and -s $out3 and -s $out4);
     printf "%s\n", ($ran and $wrote) ? "success" : "failed";
 
-    mysystem("cd ../");
     chdir("../");
 }
 
@@ -124,8 +122,7 @@ if ( $program{"$program"} or $all ) {
     
     mysystem ("rm -rf $fresDirT") if ( -d $fresDirT );
     
-    mysystem ("mkdir $fresDirT/");
-    mysystem ("cd $fresDirT/");
+    mkdir("$fresDirT/");
     chdir("$fresDirT");
     
     mysystem ("cp $buildDir/$program ./");
@@ -148,7 +145,6 @@ if ( $program{"$program"} or $all ) {
     my $wrote = (-s $out1 and -s $out2 and -s $out3 and -s $out4);
     printf "%s\n", ($ran and $wrote) ? "success" : "failed";
 
-    mysystem("cd ../");
     chdir("../");
 }
 
@@ -168,8 +164,7 @@ if ( $program{"$program"} or $all ) {
     
     mysystem ("rm -rf $fresDirTA") if ( -d $fresDirTA );
     
-    mysystem("mkdir $fresDirTA/");
-    mysystem("cd $fresDirTA/");
+    mkdir("$fresDirTA/");
     chdir("$fresDirTA");
     
     mysystem ("cp $buildDir/$program ./");
@@ -192,7 +187,6 @@ if ( $program{"$program"} or $all ) {
     my $wrote = (-s $out1 and -s $out2 and -s $out3 and -s $out4);
     printf "%s\n", ($ran and $wrote) ? "success" : "failed";
     
-    mysystem("cd ../");
     chdir("../");
 }
 
