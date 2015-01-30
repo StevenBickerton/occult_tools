@@ -11,8 +11,7 @@ CC = gcc
 UNAME := $(shell uname -s)
 CONDOR_CODE = condor_detect
 ifeq ($(UNAME),Darwin)
-	CC = gcc-mp-4.2
-	CC = gcc
+	CC = clang
 	CONDOR_CODE =
 endif
 
