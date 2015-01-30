@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
   printf ("\nstatistics.h preprocessor constants\n\n");
 
   ddump("STAT_MAX_LINE_LENGTH", STAT_MAX_LINE_LENGTH);
-  ddump("CLIP_TOLERANCE", CLIP_TOLERANCE); 
+  fdump("CLIP_TOLERANCE", CLIP_TOLERANCE); 
   ddump("CLIP_ITERATIONS", CLIP_ITERATIONS);
 
   printf ("\n");

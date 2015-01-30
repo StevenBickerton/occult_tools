@@ -100,8 +100,9 @@ typedef double FLOAT;
 #define XCORR_COMPUTE_THRESH 0.4    /* fraction of corrThresh to bother computing */
 #define NORM_WIDTH_SEC      20	    /* width in seconds to use for xcorr-norm*/
 #define NORMALIZING         0       // to normalize the xcorr values or not
-#define XCORR_RMS_WINDOW    6.8     // half-width of the sliding RMS used
-                                    // to normalize the xcorr output.
+// #define XCORR_RMS_WINDOW    6.8     // half-width of the sliding RMS used
+#define XCORR_RMS_WINDOW    7     // half-width of the sliding RMS used
+                                    // to normalize the xcorr output.  (should be int)
 #define XCORR_CORRECTION    1.0    // factor to shift the ideal xcorr value
                                     //   to one consistent with data
 #define XCORR_RMS_PERC      0.3   // fraction to scale the XCORR_RMS_WINDOW by
