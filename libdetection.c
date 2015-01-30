@@ -874,6 +874,7 @@ void initPfresPatt (SHADOW *pfresPatt, TS *pts, int i_vel) {
 			 (pfresPatt->vRet[i_vel]*pts->dt)) + 6;
 			 
   pfresPatt->I[i_vel] = det_malloc(size * sizeof(FLOAT));
+  pfresPatt->nI[i_vel] = size;
 }
 
 
