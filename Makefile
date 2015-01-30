@@ -9,10 +9,8 @@ endif
 # if we're on my Mac, use gcc 4.2
 CC = gcc
 UNAME := $(shell uname -s)
-CONDOR_CODE = condor_detect
 ifeq ($(UNAME),Darwin)
 	CC = clang
-	CONDOR_CODE =
 endif
 
 HEADS = detection.h statistics.h fft-gsl.h fft-fftw.h
@@ -36,7 +34,7 @@ BINDIR  = ${HOME}/usr/bin
 ########################################################
 BINARIES = detect addKBO komplete makeKernel offsetPattern xcorrelate \
 	xchi basis fresnelBox fresnelT hideKBO buildParams fresnelTA \
-	hideKBO_TA fits2ascii $(CONDOR_CODE)
+	hideKBO_TA fits2ascii
 
 all: $(OBJS) $(BINARIES)
 
@@ -67,9 +65,6 @@ buildParams: buildParams.o $(HEADS) $(OBJS)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $< $(LDFLAGS) -o $@
 fits2ascii: fits2ascii.o $(HEADS) $(OBJS)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $< $(LDFLAGS) -o $@
-
-condor_detect: detect.o $(HEADS) $(OBJS)
-	condor_compile $(CC) $(CFLAGS) $(CPPFLAGS) $< -static $(LDFLAGS) -o $@
 
 build the objects:
 %.o : %.c $(HEADS)
