@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 {
 
   int i_vel;
-  int nChiHit, icentre;
+  int icentre;
   HIT chihits[MAX_HITS];
   char *thisfile, *fresfile, *tsfile;
   time_t tseed = time(NULL);
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 
   // cross-correlate the time-series
   DPRINTF("main(): calling xcorrelate()\n");
-  nChiHit = xchi(chihits, ptsa, pfresPatt[1], i_vel, chiThresh, DUMP);
+  xchi(chihits, ptsa, pfresPatt[1], i_vel, chiThresh, DUMP);
 
   // cleanup
   free(pfresPatt[1]->I[i_vel]);

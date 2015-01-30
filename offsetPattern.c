@@ -25,9 +25,6 @@ int main(int argc, char *argv[])
   char *fresfile, *thisfile;
   time_t tseed = time(NULL);
 
-  TS tsa, *ptsa;
-  ptsa = &tsa;
-
   SHADOW *pfresPatt[2];
 
   FLOAT maxOffset, offset;

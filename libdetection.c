@@ -885,8 +885,8 @@ int makeKernel (FLOAT *kernel, int *icentre, SHADOW *pfresPatt, TS *pts, int i_v
 
   int i,k,l;    // loop indices
 
-  FLOAT x1, x2, x, x_last, x_next, I1, I2, I, I_last;
-  FLOAT dx, xmx1, xmx2, xmx_end;  // x intervals used in integration
+  FLOAT x1, x2, x, x_last, I1, I2, I, I_last;
+  FLOAT dx, xmx1, xmx_end;  // x intervals used in integration
   FLOAT t_start;                  // begin of kernel time
   FLOAT x_start, x_data, dx_sample, x_end;  // begin kernel position
   const FLOAT x00Step = pfresPatt->x00Step; // local version
@@ -1024,14 +1024,12 @@ int makeKernel (FLOAT *kernel, int *icentre, SHADOW *pfresPatt, TS *pts, int i_v
     //MKDPRINTF("makeKernel(): k=%d\n",k);
     x = k * x00Step;
     x_last = x - x00Step;
-    x_next = x + x00Step;
     
     I = xItmp[k];
     I_last = (k>0) ? xItmp[k-1] : 1.0;
     //I_next = (k<(nx-1)) ? xItmp[k+1] : 1.0;
     
     xmx1 = fabs(x-x1);
-    xmx2 = fabs(x-x2);
     xmx_end = fabs(x-x_end);
     
     if (k==icentre_tmp) {
@@ -1393,14 +1391,13 @@ STAT xcorr_norm(FLOAT *corr, FLOAT *corrNorm, TS *ptsa, SHADOW *pfresPatt, int n
   int i_vel = pfresPatt->i_vel;
   int i, j;
   FLOAT corrSum;
-  FLOAT mean, rms;
+  FLOAT rms;
   int nCorr;
   STAT stats;
 
 
   // get global stats to use for clipping in the normaliz'n routine
   stats = meanRmsClip_d(corr, nPts, SIGMA_CLIP, STRIDE);
-  mean = stats.mean;
   rms = stats.rms;
   
   // initialize

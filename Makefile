@@ -88,7 +88,7 @@ build the objects:
 clean: 
 	$(RM) *.o $(BINARIES)
 	rm -rf test
-
+	rm -rf *.dSYM
 
 #########################################################
 .PHONY: install

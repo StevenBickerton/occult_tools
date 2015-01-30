@@ -34,7 +34,6 @@ int main(int argc, char *argv[])
   HIT corrhits[MAX_HITS], chihits[MAX_HITS], recovered[MAX_HITS];
   char *paramfile, *tsfile;
   char hitsfile[MAX_FILENAME], statsfile[MAX_FILENAME];
-  char *thisfile;
   time_t tseed = time(NULL);
   STAT stats;
   
@@ -74,7 +73,6 @@ int main(int argc, char *argv[])
   }
 
   DPRINTF("main(): Reading in Command line args.\n");
-  thisfile = argv[0];
   if ( argc-optind != 4 ) {
     usage();
     exit(EXIT_FAILURE);

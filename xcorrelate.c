@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 {
 
   int i_vel, norm=NORMALIZING;
-  int nCorrHit, icentre;
+  int icentre;
   char *tsfile;
   HIT corrhits[MAX_HITS];
   char *thisfile, *fresfile;
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 
   // cross-correlate the time-series
   DPRINTF("main(): calling xcorrelate()\n");
-  nCorrHit = xcorrelate(corrhits,ptsa,pfresPatt[1],i_vel,corrThresh,DUMP,norm);
+  xcorrelate(corrhits,ptsa,pfresPatt[1],i_vel,corrThresh,DUMP,norm);
 
   // cleanup
   free(pfresPatt[1]->I[i_vel]);

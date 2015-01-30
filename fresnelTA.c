@@ -48,9 +48,8 @@ int main(int argc, char *argv[])
 
   // initializations 
   //  char paramfile[MAX_FILENAME], thisfile[MAX_FILENAME], paramLine[80];
-  char *thisfile, paramLine[80];
+  char *thisfile, paramLine[MAXLINE];
   char paramfile[MAX_FILENAME];
-  FLOAT value_tmp;
 
   FLOAT offset = 0;
   FLOAT RStarProj = 100;
@@ -96,7 +95,6 @@ int main(int argc, char *argv[])
 
 
   // read in parameters
-  value_tmp = -1;
   while ( fgets(paramLine, MAXLINE, fp) != NULL ) {
 
 
@@ -205,7 +203,7 @@ int main(int argc, char *argv[])
    *
    * *********************************************************** */
 
-  FLOAT xAct,yAct,xll,yll, xComp, yComp;
+  FLOAT xAct,yAct, xComp, yComp;
   int currentOrder;
 
   for (i=0; i<nbox; i++) {
@@ -213,8 +211,6 @@ int main(int argc, char *argv[])
     currentOrder = coords[i].order;
     xAct = coords[i].xur;
     yAct = coords[i].yur;
-    xll  = coords[i].xll;
-    yll  = coords[i].yll;
 
     for (j=0; j<nbox; j++) {
       
