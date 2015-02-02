@@ -109,6 +109,7 @@ install:
 	$(INSTALL) rip_snr.pl	      $(BINDIR)/rip_snr
 	$(INSTALL) rip_diff.pl        $(BINDIR)/rip_diff
 	$(INSTALL) getRateFromStats.pl $(BINDIR)/getRateFromStats
+	$(INSTALL) plot.pl            $(BINDIR)/plot
 
 #########################################################
 .PHONY: uninstall
