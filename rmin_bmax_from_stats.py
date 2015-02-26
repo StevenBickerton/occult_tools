@@ -12,6 +12,8 @@ import sys, re
 import numpy as num
 from scipy.optimize import leastsq
 
+import argparse
+
 def Usage():
     print """Usage: %s statfile """ % sys.argv[0]
     sys.exit(1)
@@ -57,19 +59,7 @@ def pritchet2d(p, r, b, rbreak, rwid, bwid):
 def residuals(p, data, r, b, rbreak, rwid, bwid):
     return data - pritchet2d(p, r, b, rbreak, rwid, bwid)
 
-def main():
-    if len(sys.argv) != 2:
-        Usage()
-        
-    try:
-        statfile = sys.argv[1]
-    except:
-        Usage()
-
-    try:
-        lamb = num.float(sys.argv[2])
-    except:
-        lamb = 5.5e-7
+def main(statfile, lamb, dumpfile=None):
 
     thresh = 0.8
 
@@ -114,6 +104,13 @@ def main():
     p = leastsq(residuals, p0, (data,r,b, rbreak, rwid, bwid)) 
     A, r0, b0 =  p[0]
 
+    if dumpfile:
+        with open(dumpfile, 'w') as fp:
+            prit = pritchet2d(p[0], r, b, rbreak, rwid, bwid);
+            for i in range(len(r)):
+                fp.write("%.2f %.2f %.4f %.4f\n" % (r[i], b[i], data[i], prit[i]))
+
+
     if ( num.max(r)-r0 < 100 ): A = 0.0
 
     s = 1.0
@@ -124,5 +121,11 @@ def main():
         
     
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("statfile", help="input statistics file")
+    parser.add_argument("-L", "--lamb", type=float, default=5.5e-7, help="Lambda")
+    parser.add_argument("-d", "--dumpfile", default=None, help="Dump fit data to file.")
+    args = parser.parse_args()
+
+    main(args.statfile, args.lamb, dumpfile=args.dumpfile)
     
