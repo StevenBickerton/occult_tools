@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-my $number = '[+-]?\d+\.?\d*[eE]?[+-]?\d*';
+my $number = '[+-]?\d+\.?\d*';
 
 # see if there's an input file
 ( $ARGV[0])                    and 
@@ -47,7 +47,6 @@ my $usage = "\nusage: $0 [infile] [gnuplot plot string] [file.eps]\n".
     "\n".
     " uX:Y         = sets x and y data columns to X and Y\n".
     " cCOL:LO:HI   = sets conditionals column:low:high (limits inclusive)\n".
-    " eCOL:LO:HI   = sets exclusion column:low:high (limits inclusive)\n".
     " hl           = sets header labels ... axis labels taken from header\n".
     " set:par=val  = sets a gnuplot parameter to value\n".
     " sett:par=val = sets a text parameter to \'value\' (note the quotes)\n".
@@ -123,7 +122,6 @@ my @plots;
 my @columns;
 my @lc_col;
 my @conditions;
-my @exclusions;
 my $script_warning = "";
 my $set_labels = 0;
 
@@ -202,18 +200,11 @@ foreach my $part (@string) {
 	$set_labels = 1;
 
     # set conditionals
-    } elsif ($part =~ /^c\d+/ ) {
+    } elsif ($part =~ /^c/ ) {
 	my ($col,$lo,$hi) = $part =~ /^c(\d+):(\S+):(\S+)$/;
 	die "Error in conditional: $part\n\n$usage\n" unless $col;
 	scriptWarn("Conditional $part is not handled by this script\n");
 	push @conditions, [$col,$lo,$hi];
-
-    # set exclusions
-    } elsif ($part =~ /^e\d+/ ) {
-	my ($col,$lo,$hi) = $part =~ /^e(\d+):(\S+):(\S+)$/;
-	die "Error in exclusion: $part\n\n$usage\n" unless $col;
-	scriptWarn("Exclusion $part is not handled by this script\n");
-	push @exclusions, [$col,$lo,$hi];
 
     # extract the 'using' statements
     } elsif ($part =~ /^u\S+:/) {
@@ -413,13 +404,6 @@ READIN: while (<INFILE>) {
 	my ($col, $lo, $hi) = @$condition;
 	next READIN 
 	    unless $line[$col-1] >= $lo and $line[$col-1] <= $hi;
-    }
-
-    # filter data according to the exclusions
-    foreach my $exclusion (@exclusions) {
-	my ($col, $lo, $hi) = @$exclusion;
-	next READIN 
-	    unless $line[$col-1] <= $lo or $line[$col-1] >= $hi;
     }
 
     printf TMP "$_"; 
