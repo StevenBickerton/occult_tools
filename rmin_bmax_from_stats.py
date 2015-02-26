@@ -52,7 +52,7 @@ def pritchet2d(p, r, b, rbreak, rwid, bwid):
 
     s = 1.0    
     b0tmp = b0 + s*(r-rbreak)* pritchet( (bwid,rbreak), r)
-    return A * pritchet( (rwid,r0), r) * (1.0 - pritchet( (rwid, b0tmp), b))
+    return A * pritchet( (rwid,r0), r) * (1.0 - pritchet( (bwid, b0tmp), b))
 
 def residuals(p, data, r, b, rbreak, rwid, bwid):
     return data - pritchet2d(p, r, b, rbreak, rwid, bwid)
