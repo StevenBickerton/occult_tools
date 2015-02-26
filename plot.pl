@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-my $number = '[+-]?\d+\.?\d*';
+my $number = '[+-]?\d+\.?\d*[eE]?[+-]?\d*';
 
 # see if there's an input file
 ( $ARGV[0])                    and 
@@ -47,6 +47,7 @@ my $usage = "\nusage: $0 [infile] [gnuplot plot string] [file.eps]\n".
     "\n".
     " uX:Y         = sets x and y data columns to X and Y\n".
     " cCOL:LO:HI   = sets conditionals column:low:high (limits inclusive)\n".
+    " eCOL:LO:HI   = sets exclusion column:low:high (limits inclusive)\n".
     " hl           = sets header labels ... axis labels taken from header\n".
     " set:par=val  = sets a gnuplot parameter to value\n".
     " sett:par=val = sets a text parameter to \'value\' (note the quotes)\n".
@@ -122,6 +123,7 @@ my @plots;
 my @columns;
 my @lc_col;
 my @conditions;
+my @exclusions;
 my $script_warning = "";
 my $set_labels = 0;
 
@@ -150,176 +152,188 @@ my $npharm = 200;
 # dump
 my $dump_stdout = 0;
 
+my $no_title = 0;
+
 sub scriptWarn ($) {my ($msg) = @_; chomp $msg; 
-		    $script_warning .= "# WARN: $msg\n";}
+                    $script_warning .= "# WARN: $msg\n";}
 
 foreach my $part (@string) {
 
     # snip out the range information so we can put it in before the filename
     # in the printf to gnuplot
     if ($part =~ /^\[.*:.*\]$/ ) {
-	push @range, "$part ";
+        push @range, "$part ";
 
-    # make it possible to set parameters
+        # make it possible to set parameters
     } elsif ($part =~ /^set:/ ) {
-	my ($param, $value) = $part =~ /^set:(\S+)=(\S*)$/;
-	die "Error setting parameter: $part\n\n$usage\n" unless defined $value;
-	$set .= "set $param $value\n";
-
-    # make it possible to unset parameters
+        my ($param, $value) = $part =~ /^set:(\S+)=(\S*)$/;
+        die "Error setting parameter: $part\n\n$usage\n" unless defined $value;
+        $set .= "set $param $value\n";
+        
+        # make it possible to unset parameters
     } elsif ($part =~ /^unset:/ ) {
-	my ($param) = $part =~ /^unset:(\w+)$/;
-	die "Error unsetting parameter: $part\n\n$usage\n" unless $param;
-	$set .= "unset $param\n";
-
-    # make a shortform for logs
+        my ($param) = $part =~ /^unset:(\w+)$/;
+        die "Error unsetting parameter: $part\n\n$usage\n" unless $param;
+        $set .= "unset $param\n";
+        
+        # make a shortform for logs
     } elsif ($part =~ /^log/ ) {
-	my ($value) = $part =~ /^log(\w\w?\w?)$/;
-	die "Error setting log scale: $part\n\n$usage\n" 
-	    unless $value =~ /(x|y|z|xy|xz|yz|xyz)/;
-	$set .= "set logscale $value\n";
-
-    # make it possible to set text parameters
+        my ($value) = $part =~ /^log(\w\w?\w?)$/;
+        die "Error setting log scale: $part\n\n$usage\n" 
+            unless $value =~ /(x|y|z|xy|xz|yz|xyz)/;
+        $set .= "set logscale $value\n";
+        
+        # make it possible to set text parameters
     } elsif ($part =~ /^sett:/ ) {
-	my ($param, $value) = $part =~ /^sett:(\S+)=(.*)$/;
-	die "Error setting text parameter: $part\n\n$usage\n" unless $param;
-	$set .= "set $param \'$value\'\n";
-	
-    # set splot
+        my ($param, $value) = $part =~ /^sett:(\S+)=(.*)$/;
+        die "Error setting text parameter: $part\n\n$usage\n" unless $param;
+        $set .= "set $param \'$value\'\n";
+        
+        # set splot
     } elsif ($part =~ /^3d$/ ) {
-	$splot = 1;
-
-    # set a line colour column
+        $splot = 1;
+        
+        # set a line colour column
     } elsif ($part =~ /^lc/ ) {
-	my ($lc_col) = $part =~ /^lc(\d+)$/;
-	die "Error in lc: $part\n\n$usage\n" unless $lc_col;
-	push @lc_col, $lc_col;
-
-    # set header labels
+        my ($lc_col) = $part =~ /^lc(\d+)$/;
+        die "Error in lc: $part\n\n$usage\n" unless $lc_col;
+        push @lc_col, $lc_col;
+        
+        # set header labels
     } elsif ($part =~ /^(headlab|hl)$/ ) {
-	$set_labels = 1;
-
-    # set conditionals
-    } elsif ($part =~ /^c/ ) {
-	my ($col,$lo,$hi) = $part =~ /^c(\d+):(\S+):(\S+)$/;
-	die "Error in conditional: $part\n\n$usage\n" unless $col;
-	scriptWarn("Conditional $part is not handled by this script\n");
-	push @conditions, [$col,$lo,$hi];
-
-    # extract the 'using' statements
+        $set_labels = 1;
+        
+        # set conditionals
+    } elsif ($part =~ /^c\d+/ ) {
+        my ($col,$lo,$hi) = $part =~ /^c(\d+):(\S+):(\S+)$/;
+        die "Error in conditional: $part\n\n$usage\n" unless $col;
+        scriptWarn("Conditional $part is not handled by this script\n");
+        push @conditions, [$col,$lo,$hi];
+        
+        # set exclusions
+    } elsif ($part =~ /^e\d+/ ) {
+        my ($col,$lo,$hi) = $part =~ /^e(\d+):(\S+):(\S+)$/;
+        die "Error in exclusion: $part\n\n$usage\n" unless $col;
+        scriptWarn("Exclusion $part is not handled by this script\n");
+        push @exclusions, [$col,$lo,$hi];
+        
+        # extract the 'using' statements
     } elsif ($part =~ /^u\S+:/) {
-	(my $part2 = $part) =~ s/u/using /;
-	push @columns, $part2;
-
-    # extract user labels
+        (my $part2 = $part) =~ s/u/using /;
+        push @columns, $part2;
+        
+        # extract user labels
     } elsif ($part =~ /^label\d+:/) {
-	my ($num,$label) = $part =~ /label(\d+):(.+)$/;
-	die "Error in label: $part\n\n$usage\n" unless $label;
-	my ($ver,$hor) = $label =~ /\w+:([ul])([lr])$/;
-	$label =~ s/:[ul][rl]$//;
-
-	$ver = 'u' unless $ver;
-	$hor = 'r' unless $hor;
-	my $nlab = $nlabel{$ver.$hor}++;
-	my $v_incr = 0.05;
-	my ($xpos,$xjust) = ($hor eq 'l') ? (0.05,"l") : (0.95,"r");
-	my ($ypos) = ($ver eq 'u') ? (1.0 - $nlab*$v_incr) : ($nlab*$v_incr);
-	$set_user_label .= "set label $num \"$label\" at graph $xpos,$ypos $xjust\n";
-
-    # extract vertical lines
+        my ($num,$label) = $part =~ /label(\d+):(.+)$/;
+        die "Error in label: $part\n\n$usage\n" unless $label;
+        my ($ver,$hor) = $label =~ /\w+:([ul])([lr])$/;
+        $label =~ s/:[ul][rl]$//;
+        
+        $ver = 'u' unless $ver;
+        $hor = 'r' unless $hor;
+        my $nlab = $nlabel{$ver.$hor}++;
+        my $v_incr = 0.05;
+        my ($xpos,$xjust) = ($hor eq 'l') ? (0.05,"l") : (0.95,"r");
+        my ($ypos) = ($ver eq 'u') ? (1.0 - $nlab*$v_incr) : ($nlab*$v_incr);
+        $set_user_label .= "set label $num \"$label\" at graph $xpos,$ypos $xjust\n";
+        
+        # extract vertical lines
     } elsif ($part =~ /^vline:\S+/) {
-	my ($xpos) = $part =~ /^vline:(\S+)$/;
-	die "Error in vline: $part\n\n$usage\n" 
-	    unless ($xpos=~/^$number$/  || $xpos=~/^${number}e${number}$/ );
-
-	$vlines .= "set arrow $nvline from $xpos,graph 0 to $xpos,graph 1.0 nohead\n";
-	$nvline++;
-
-    # extract horizontal lines
+        my ($xpos) = $part =~ /^vline:(\S+)$/;
+        die "Error in vline: $part\n\n$usage\n" 
+            unless ($xpos=~/^$number$/  || $xpos=~/^${number}e${number}$/ );
+        
+        $vlines .= "set arrow $nvline from $xpos,graph 0 to $xpos,graph 1.0 nohead\n";
+        $nvline++;
+        
+        # extract horizontal lines
     } elsif ($part =~ /^hline:\S+/) {
-	my ($ypos) = $part =~ /^hline:(\S+)$/;
-	die "Error in hline: $part\n\n$usage\n"
-	    unless ($ypos=~/^$number$/  || $ypos=~/^${number}e${number}$/ );
-
-	$vlines .= "set arrow $nhline from graph 0,first $ypos to graph 1.0,first $ypos nohead\n";
-	$nhline++;
-
-
-    # extract shading 
+        my ($ypos) = $part =~ /^hline:(\S+)$/;
+        die "Error in hline: $part\n\n$usage\n"
+            unless ($ypos=~/^$number$/  || $ypos=~/^${number}e${number}$/ );
+        
+        $vlines .= "set arrow $nhline from graph 0,first $ypos to graph 1.0,first $ypos nohead\n";
+        $nhline++;
+        
+        
+        # extract shading 
     } elsif ($part =~ /^vshade:/) {
-	my ($xlo,$xhi) = $part =~ /^vshade:(\S+):(\S+)$/;
-	die "Error in vshade: $part\n\n$usage\n" 
-	    unless ( ($xlo=~/^$number$/  || $xlo=~/^${number}e${number}$/ ) &&
-		     ($xhi=~/^$number$/  || $xhi=~/^${number}e${number}$/ ) );
-
-	$vshade .= "set obj $nvshade rect from $xlo,gr 0 to $xhi,gr 1.0\n".
-	    "set obj $nvshade behind ".
-	    "fillstyle solid nobord fc rgb \"#bbbbbb\"\n";
-	$nvshade++;
-	
+        my ($xlo,$xhi) = $part =~ /^vshade:(\S+):(\S+)$/;
+        die "Error in vshade: $part\n\n$usage\n" 
+            unless ( ($xlo=~/^$number$/  || $xlo=~/^${number}e${number}$/ ) &&
+                     ($xhi=~/^$number$/  || $xhi=~/^${number}e${number}$/ ) );
+        
+        $vshade .= "set obj $nvshade rect from $xlo,gr 0 to $xhi,gr 1.0\n".
+            "set obj $nvshade behind ".
+            "fillstyle solid nobord fc rgb \"#bbbbbb\"\n";
+        $nvshade++;
+        
     } elsif ($part =~ /^hshade:/) {
-	my ($ylo,$yhi) = $part =~ /^hshade:(\S+):(\S+)$/;
-	die "Error in hshade: $part\n\n$usage\n"
-	    unless ( ($ylo=~/^$number$/  || $ylo=~/^${number}e${number}$/ ) &&
-		     ($yhi=~/^$number$/  || $yhi=~/^${number}e${number}$/ ) );
-
-	$hshade .= "set obj $nhshade rect ".
-	    "from gr 0,fir $ylo to gr 1.0,fir $yhi\n".
-	    "set obj $nhshade behind fillstyle solid noborder ".
-	    "fc rgb \"#bbbbbb\"\n";
-	$nhshade++;
-
+        my ($ylo,$yhi) = $part =~ /^hshade:(\S+):(\S+)$/;
+        die "Error in hshade: $part\n\n$usage\n"
+            unless ( ($ylo=~/^$number$/  || $ylo=~/^${number}e${number}$/ ) &&
+                     ($yhi=~/^$number$/  || $yhi=~/^${number}e${number}$/ ) );
+        
+        $hshade .= "set obj $nhshade rect ".
+            "from gr 0,fir $ylo to gr 1.0,fir $yhi\n".
+            "set obj $nhshade behind fillstyle solid noborder ".
+            "fc rgb \"#bbbbbb\"\n";
+        $nhshade++;
+        
     } elsif ($part =~ /^rshade:/) {
-	my ($xlo,$ylo,$xhi,$yhi) = $part =~ /^rshade:(\S+):(\S+):(\S+):(\S+)$/;
-	die "Error in rshade: $part\n\n$usage\n"
-	    unless ( ($xlo=~/^$number$/  || $xlo=~/^${number}e${number}$/ ) &&
-		     ($xhi=~/^$number$/  || $xhi=~/^${number}e${number}$/ ) &&
-		     ($ylo=~/^$number$/  || $ylo=~/^${number}e${number}$/ ) &&
-		     ($yhi=~/^$number$/  || $yhi=~/^${number}e${number}$/ ) );
-
-	$rshade .= "set obj $nrshade rect ".
-	    "from $xlo,$ylo to $xhi,$yhi\n".
-	    "set obj $nrshade behind fillstyle solid noborder ".
-	    "fc rgb \"#bbbbbb\"\n";
-	$nrshade++;
-
-
-    # show period harmonics
+        my ($xlo,$ylo,$xhi,$yhi) = $part =~ /^rshade:(\S+):(\S+):(\S+):(\S+)$/;
+        die "Error in rshade: $part\n\n$usage\n"
+            unless ( ($xlo=~/^$number$/  || $xlo=~/^${number}e${number}$/ ) &&
+                     ($xhi=~/^$number$/  || $xhi=~/^${number}e${number}$/ ) &&
+                     ($ylo=~/^$number$/  || $ylo=~/^${number}e${number}$/ ) &&
+                     ($yhi=~/^$number$/  || $yhi=~/^${number}e${number}$/ ) );
+        
+        $rshade .= "set obj $nrshade rect ".
+            "from $xlo,$ylo to $xhi,$yhi\n".
+            "set obj $nrshade behind fillstyle solid noborder ".
+            "fc rgb \"#bbbbbb\"\n";
+        $nrshade++;
+        
+        
+        # show period harmonics
     } elsif ($part =~ /^pharm:/) {
-	my ($period, $nharm) = $part =~ /^pharm:($number):?(\d+)?$/;
-	die "Error in pharm: $part\n\n$usage\n"
-	    unless ($period);
-
-	foreach my $harmonic ( map {$period/$_} (1 .. $nharm) ) {
-	    
-	    my $harmonicS = sprintf "%.2g", $harmonic;
-	    $pharm .= "set arrow $npharm from $harmonic, gr 1.00 to $harmonic, gr 0.95\n";
-	    $pharm .= "set label $npharm \"$harmonicS\" at $harmonic, gr 1.02 left rotate by 90\n";
-	    $npharm++;
-	}
-
-    # show frequency harmonics
+        my ($period, $nharm) = $part =~ /^pharm:($number):?(\d+)?$/;
+        die "Error in pharm: $part\n\n$usage\n"
+            unless ($period);
+        
+        foreach my $harmonic ( map {$period/$_} (1 .. $nharm) ) {
+            
+            my $harmonicS = sprintf "%.2g", $harmonic;
+            $pharm .= "set arrow $npharm from $harmonic, gr 1.00 to $harmonic, gr 0.95\n";
+            $pharm .= "set label $npharm \"$harmonicS\" at $harmonic, gr 1.02 left rotate by 90\n";
+            $npharm++;
+        }
+        
+        # show frequency harmonics
     } elsif ($part =~ /^fharm:/) {
-	my ($period, $nharm) = $part =~ /^fharm:($number):?(\d+)?$/;
-	die "Error in fharm: $part\n\n$usage\n"
-	    unless ($period);
-
-	foreach my $harmonic ( map {$period*$_} (1 .. $nharm) ) {
-	    
-	    my $harmonicS = sprintf "%.2g", $harmonic;
-	    $pharm .= "set arrow $npharm from $harmonic, gr 1.00 to $harmonic, gr 0.95\n";
-	    $pharm .= "set label $npharm \"$harmonicS\" at $harmonic, gr 1.02 left rotate by 90\n";
-	    $npharm++;
-	}
-
-    # set variable to dump gpstring to STDOUT
+        my ($period, $nharm) = $part =~ /^fharm:($number):?(\d+)?$/;
+        die "Error in fharm: $part\n\n$usage\n"
+            unless ($period);
+        
+        foreach my $harmonic ( map {$period*$_} (1 .. $nharm) ) {
+            
+            my $harmonicS = sprintf "%.2g", $harmonic;
+            $pharm .= "set arrow $npharm from $harmonic, gr 1.00 to $harmonic, gr 0.95\n";
+            $pharm .= "set label $npharm \"$harmonicS\" at $harmonic, gr 1.02 left rotate by 90\n";
+            $npharm++;
+        }
+        
+        # set variable to dump gpstring to STDOUT
     } elsif ($part =~ /^dump$/ ) {
-	$dump_stdout = 1;
+        $dump_stdout = 1;
 
-
-    # what's left is the plot string
+    } elsif ($part =~ /^notitle$/) {
+        print "hello";
+        $no_title = 1;
+        
+        # what's left is the plot string
     } else {
-	$string .= "$part ";
+        $string .= "$part ";
     }
 }
 
@@ -361,16 +375,16 @@ READIN: while (<INFILE>) {
 
     # grab column labels if they exist (last for comments split values)
     if ($_ =~ /^\#/) {
-	next READIN unless $set_labels;
-	my @line = split;
-	my $xlab = "\'$line[$xcol]\'" if $xcol_int && $line[$xcol_int];
-	my $ylab = "\'$line[$ycol]\'" if $ycol_int && $line[$ycol_int];
-	my $zlab = "\'$line[$zcol]\'" if $zcol_int && $line[$zcol_int];
-	($xlabel,$ylabel) = ($xlab,$ylab) if ($xlab && $ylab);
-	$zlabel = "set zlabel ".$zlab if ($xlab && $ylab && $zlab);
-	next READIN;
+        next READIN unless $set_labels;
+        my @line = split;
+        my $xlab = "\'$line[$xcol]\'" if $xcol_int && $line[$xcol_int];
+        my $ylab = "\'$line[$ycol]\'" if $ycol_int && $line[$ycol_int];
+        my $zlab = "\'$line[$zcol]\'" if $zcol_int && $line[$zcol_int];
+        ($xlabel,$ylabel) = ($xlab,$ylab) if ($xlab && $ylab);
+        $zlabel = "set zlabel ".$zlab if ($xlab && $ylab && $zlab);
+        next READIN;
     }
-
+    
     # keep the blank lines as they mark data blocks
     if ($_ =~ /^\s+$/) { printf TMP "$_"; next READIN;}
 
@@ -379,33 +393,40 @@ READIN: while (<INFILE>) {
     # collect info on the values in the line colour column
     foreach my $j (0 .. $#lc_col) {
 
-	if ($lc_col[$j]) {
-
-	    # if the number of different values is less than nbins
-	    #   add a new value to the list
-	    if ( scalar keys %{$lc_vals[$j]} <= $nbins ) {
-		${$lc_vals[$j]}{$line[$lc_col[$j]-1]} = 1;
-
-	    # otherwise ... set the flag to bin data in this column
-	    } else { 
-		$lc_bin[$j] = 1; 
-	    }
-
-	    my $lc = $line[$lc_col[$j]-1];  # the value of this data point
-	    $lc_min[$j] = $lc if ($lc<$lc_min[$j]);
-	    $lc_max[$j] = $lc if ($lc>$lc_max[$j]);
-	}
-
+        if ($lc_col[$j]) {
+            
+            # if the number of different values is less than nbins
+            #   add a new value to the list
+            if ( scalar keys %{$lc_vals[$j]} <= $nbins ) {
+                ${$lc_vals[$j]}{$line[$lc_col[$j]-1]} = 1;
+                
+                # otherwise ... set the flag to bin data in this column
+            } else { 
+                $lc_bin[$j] = 1; 
+            }
+            
+            my $lc = $line[$lc_col[$j]-1];  # the value of this data point
+            $lc_min[$j] = $lc if ($lc<$lc_min[$j]);
+            $lc_max[$j] = $lc if ($lc>$lc_max[$j]);
+        }
+        
     }
-
-
+    
+    
     # filter data according to the conditional
     foreach my $condition (@conditions) {
-	my ($col, $lo, $hi) = @$condition;
-	next READIN 
-	    unless $line[$col-1] >= $lo and $line[$col-1] <= $hi;
+        my ($col, $lo, $hi) = @$condition;
+        next READIN 
+            unless $line[$col-1] >= $lo and $line[$col-1] <= $hi;
     }
-
+    
+    # filter data according to the exclusions
+    foreach my $exclusion (@exclusions) {
+        my ($col, $lo, $hi) = @$exclusion;
+        next READIN 
+            unless $line[$col-1] <= $lo or $line[$col-1] >= $hi;
+    }
+    
     printf TMP "$_"; 
 }
 close (TMP);
@@ -434,21 +455,21 @@ my $range = "";
 my @axis = ("x", "y", "z");
 foreach my $q (0 ..2) {
     if ($range[$q]) {
-	my @values = $range[$q] =~ /^\[(.*):(.*)\] $/;
-
-	my $ax = $axis[$q];
-	my ($min, $max) = @values;
-
-	my $minl = ($min =~ /^$number$/) ? "${ax}min" : "";
-	my $maxl = ($max =~ /^$number$/) ? "${ax}max" : "";
-
-	$range .= sprintf "%s${ax}min = $min\n", ($min =~ /^$number$/) ? 
-	    "" : "# ";
-	$range .= sprintf "%s${ax}max = $max\n", ($max =~ /^$number$/) ? 
-	    "" : "# ";
-	
-	$range .= "set ${ax}range [$minl:$maxl]\n";
-	
+        my @values = $range[$q] =~ /^\[(.*):(.*)\] $/;
+        
+        my $ax = $axis[$q];
+        my ($min, $max) = @values;
+        
+        my $minl = ($min =~ /^$number$/) ? "${ax}min" : "";
+        my $maxl = ($max =~ /^$number$/) ? "${ax}max" : "";
+        
+        $range .= sprintf "%s${ax}min = $min\n", ($min =~ /^$number$/) ? 
+            "" : "# ";
+        $range .= sprintf "%s${ax}max = $max\n", ($max =~ /^$number$/) ? 
+            "" : "# ";
+        
+        $range .= "set ${ax}range [$minl:$maxl]\n";
+        
     }
 }
 foreach my $q (0 ..2) {
@@ -465,67 +486,67 @@ my @hex = ("#%x0000", "#00%x00", "#0000%x");
 my $mod = 3;
 
 foreach my $j (0 .. $#columns) {
-
+    
     #my $colorIncr = $bits / ( ( scalar keys %{$lc_vals[$j]} ) - 1);
     my $colorIncr = ($lc_vals[$j]) ? 
-	$bits / ( scalar keys %{$lc_vals[$j]} ) : $bits;
+        $bits / ( scalar keys %{$lc_vals[$j]} ) : $bits;
     
     # grab the string for a single plot with these columns
     #   if lc_col is set, we'll overwrite this string with the first
     #      line in the colour sequence
-
+    
     $columns[$j] =~ s/:$//;  # if it's just a single column, lose the :
-
+    
     if ($lc_col[$j] && $lc_bin[$j]) {
-	push @{$plots[$j]}, sprintf 
-	    ",\\\n\'$tmpfile\' $columns[$j] $string lc rgb \"$hex[$j % $mod]\"", $bits;
+        push @{$plots[$j]}, sprintf 
+            ",\\\n\'$tmpfile\' $columns[$j] $string lc rgb \"$hex[$j % $mod]\"", $bits;
     } else {
-	push @{$plots[$j]}, sprintf ",\\\n\'$tmpfile\' $columns[$j] $string";
+        push @{$plots[$j]}, sprintf ",\\\n\'$tmpfile\' $columns[$j] $string";
     }
     
     # if we're binning the data for line colours
     if ($lc_col[$j] && $lc_bin[$j]) {
-	
-	my ($xcolumn, $ycolumn) = $columns[$j] =~ /^using (\S+):(\S+)$/;
-	$xcolumn = "\$".$xcolumn if $xcolumn =~ /^\d+$/;
-	my $lc_col = $lc_col[$j];
-	my $range = $lc_max[$j] - $lc_min[$j];
-	my $step = $range / ($nbins-1.0);
-	
-	# wipe out the original
-	shift @{$plots[$j]};
-
-	# loop over the number of bins and push the plot string onto the array
-	foreach my $q (0 .. $nbins-1) {
-	    my $lo = sprintf "%.3g", $q*$step;
-	    my $hi = sprintf "%.3g", ($q+1)*$step;
-	    my $rgb = sprintf "\"$hex[$j % $mod]\"", ($bits - $q*$colorIncr);
-	    my $col_string = "((\$$lc_col>=$lo && \$$lc_col<$hi) ? $xcolumn : (1/0)):$ycolumn";
-	    push @{$plots[$j]}, ",\\\n\'\' using $col_string $string t \"$lo < \$$lc_col < $hi  $xcolumn:$ycolumn\" lc rgb $rgb";
-	}
-	
-	
-	# if we're not binning the data
-	#   ie. there are only a few values and we're just giving each value
-	#   it's own colour ... colour does not depend on the value itself.
+        
+        my ($xcolumn, $ycolumn) = $columns[$j] =~ /^using (\S+):(\S+)$/;
+        $xcolumn = "\$".$xcolumn if $xcolumn =~ /^\d+$/;
+        my $lc_col = $lc_col[$j];
+        my $range = $lc_max[$j] - $lc_min[$j];
+        my $step = $range / ($nbins-1.0);
+        
+        # wipe out the original
+        shift @{$plots[$j]};
+        
+        # loop over the number of bins and push the plot string onto the array
+        foreach my $q (0 .. $nbins-1) {
+            my $lo = sprintf "%.3g", $q*$step;
+            my $hi = sprintf "%.3g", ($q+1)*$step;
+            my $rgb = sprintf "\"$hex[$j % $mod]\"", ($bits - $q*$colorIncr);
+            my $col_string = "((\$$lc_col>=$lo && \$$lc_col<$hi) ? $xcolumn : (1/0)):$ycolumn";
+            push @{$plots[$j]}, ",\\\n\'\' using $col_string $string t \"$lo < \$$lc_col < $hi  $xcolumn:$ycolumn\" lc rgb $rgb";
+        }
+        
+        
+        # if we're not binning the data
+        #   ie. there are only a few values and we're just giving each value
+        #   it's own colour ... colour does not depend on the value itself.
     } elsif ($lc_col[$j] && !$lc_bin[$j]) {
-	
-	my ($xcolumn, $ycolumn) = $columns[$j] =~ /^using (\S+):(\S+)$/;
-	$xcolumn = "\$".$xcolumn if $xcolumn =~ /^\d+$/;
-	my $lc_col = $lc_col[$j];  
-	my $k=0;
-
-	# wipe out the original
-	shift @{$plots[$j]};
-
-	# loop over each different value and push the plot string to the array
-	foreach my $lc_val ( sort {$a<=>$b} keys %{$lc_vals[$j]} ) {
-	    
-	    my $rgb = sprintf "\"$hex[$j % $mod]\"", ($bits - $k*$colorIncr);
-	    my $col_string = "((\$$lc_col==$lc_val) ? $xcolumn :(1/0)):$ycolumn";
-	    push @{$plots[$j]}, ",\\\n\'\' using $col_string $string t \"\$$lc_col=$lc_val $xcolumn:$ycolumn\" lc rgb $rgb";
-	    $k++;
-	}
+        
+        my ($xcolumn, $ycolumn) = $columns[$j] =~ /^using (\S+):(\S+)$/;
+        $xcolumn = "\$".$xcolumn if $xcolumn =~ /^\d+$/;
+        my $lc_col = $lc_col[$j];  
+        my $k=0;
+        
+        # wipe out the original
+        shift @{$plots[$j]};
+        
+        # loop over each different value and push the plot string to the array
+        foreach my $lc_val ( sort {$a<=>$b} keys %{$lc_vals[$j]} ) {
+            
+            my $rgb = sprintf "\"$hex[$j % $mod]\"", ($bits - $k*$colorIncr);
+            my $col_string = "((\$$lc_col==$lc_val) ? $xcolumn :(1/0)):$ycolumn";
+            push @{$plots[$j]}, ",\\\n\'\' using $col_string $string t \"\$$lc_col=$lc_val $xcolumn:$ycolumn\" lc rgb $rgb";
+            $k++;
+        }
     }
 }
 
@@ -538,9 +559,9 @@ my $nplot = 0;
 foreach my $plotref (@plots) { 
     $nplot += scalar @$plotref; 
     if ($splot) {
-	foreach my $plot (@$plotref) {
-	    $plot =~ s/\s+lc.*//;
-	}
+        foreach my $plot (@$plotref) {
+            $plot =~ s/\s+lc.*//;
+        }
     }
     push @allplots, join("",@$plotref);     
 }
@@ -572,6 +593,14 @@ my $title = ($infile eq '-') ?
 
 # get host and user to put in the title
 my $title_info = "Host: $host User: $ENV{USER}";
+my $title_line = "";
+if ($no_title > 0) {
+    $title_line = "";
+    $title = "";
+} else {
+    $title_line = "set title sprintf(\"%s\\n\\n%s\\n\",\'$title\', \"$title_info\")";
+}
+
 
 my $gp_string = "$header".
     "$script_warning".
@@ -582,7 +611,7 @@ my $gp_string = "$header".
     "set border lw 2\n".
     "set grid lw 2\n".
     "\n".
-    "set title sprintf(\"%s\\n\\n%s\\n\",\'$title\', \"$title_info\")\n".
+    "$title_line\n".
     "set xlabel $xlabel\n".
     "set ylabel $ylabel\n".
     "$zlabel\n".
