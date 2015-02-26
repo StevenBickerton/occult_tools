@@ -328,7 +328,6 @@ foreach my $part (@string) {
         $dump_stdout = 1;
 
     } elsif ($part =~ /^notitle$/) {
-        print "hello";
         $no_title = 1;
         
         # what's left is the plot string
