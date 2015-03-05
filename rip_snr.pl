@@ -25,6 +25,6 @@ my ($statfile, $snr_ref, @other) = @ARGV;
 die $usage unless $snr_ref;
 
 my $other = join(" ", @other);
-system("plot $statfile [:] [-500:] 3d u2:4:'(\$10>$snr_ref?\$10:1/0)':'(2.0)' u2:4:'(\$10<$snr_ref?\$10:1/0)':'(1.5)' w p pt 7 ps variable palette set:view=map sett:xlabel=\'radius (m)\' sett:ylabel=\'Im. Par. (m)\' unset:key notitle $other");
+system("plot $statfile [0:] [0:] 3d u2:4:'(\$10>$snr_ref?\$10:1/0)':'(2.0)' u2:4:'(\$10<$snr_ref?\$10:1/0)':'(1.5)' w p pt 7 ps variable palette set:view=map sett:xlabel=\'radius (m)\' sett:ylabel=\'Im. Par. (m)\' unset:key notitle $other");
 
 exit 0;
