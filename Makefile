@@ -106,6 +106,7 @@ install:
 	$(INSTALL) hitSort.pl         $(BINDIR)/hitSort
 	$(INSTALL) rmin_bmax_from_stats.py $(BINDIR)/rmin_bmax_from_stats
 	$(INSTALL) rip_stat.pl        $(BINDIR)/rip_stat
+	$(INSTALL) rip_fit.pl         $(BINDIR)/rip_fit
 	$(INSTALL) rip_snr.pl	      $(BINDIR)/rip_snr
 	$(INSTALL) rip_diff.pl        $(BINDIR)/rip_diff
 	$(INSTALL) getRateFromStats.pl $(BINDIR)/getRateFromStats
